@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Stream</title>
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.6.12/plyr.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            text-align: center;
+            background: url("./img/background.jpg") no-repeat center center/cover;
+        }
+
+        h1 {
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            /* background: #111; */
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+            padding: 0;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: #ccc;
+
+            &:hover {
+                color: #fff;
+            }
+        }
+
+        .hero {
+            padding: 0px 20px;
+            /* background: url('./img/image.png') no-repeat center center/cover; */
+            text-align: left;
+            /* height: 500px; */
+        }
+
+        .hero h2 {
+            /* font-size: 2.5em; */
+            font-weight: bold;
+            margin: 24px 0 0 0;
+            padding: 0;
+        }
+
+        .hero p {
+            margin: 8px 0 24px 0;
+            padding: 0;
+            max-width: 600px;
+            color: #ccc;
+        }
+
+        .hero .buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .hero .button {
+            padding: 10px 20px;
+            border: none;
+            background: #444;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .section {
+            padding: 20px;
+            text-align: left;
+        }
+
+        .movie-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .movie img {
+            width: 150px;
+            height: 220px;
+            border-radius: 10px;
+        }
+
+        .movie1 img {
+            width: 220px;
+            border-radius: 10px;
+        }
+
+        .movie1 h4 {
+            width: 220px;
+            color: #f5f5f5;
+        }
+
+        .movie1 a :hover {
+            color: red;
+        }
+
+        .movie1 a {
+            text-decoration: none;
+        }
+
+        .top-10 {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .top-10 .movie {
+            position: relative;
+        }
+
+        .top-10 .movie::before {
+            content: attr(data-rank);
+            position: absolute;
+            left: -10px;
+            top: 10px;
+            font-size: 2em;
+            font-weight: bold;
+            outline: 1px solid #fff;
+            width: 35px;
+            border-radius: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        footer {
+            padding: 20px;
+            background: #111;
+            margin-top: 30px;
+        }
+
+        footer ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media screen and (max-width: 500px) {
+            header {
+                height: 50px;
+            }
+
+            .hero {
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+
+            nav {
+                display: none;
+            }
+
+            .hero h2 {
+                font-size: 1em;
+            }
+
+            footer ul {
+                overflow-x: scroll;
+                max-width: 100%;
+                padding: 0;
+            }
+
+        }
+
+        .top-10 {
+            overflow-x: auto;
+        }
+
+        /* WebKit Scrollbar (Chrome, Edge, Safari) */
+        ::-webkit-scrollbar {
+            height: 8px;
+            /* Horizontal scrollbar thickness */
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            /* Track color */
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            /* Thumb color */
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+            /* Thumb color on hover */
+        }
+    </style>
+    <script src="https://cdn.plyr.io/3.6.12/plyr.polyfilled.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+
+<body>
+    <header>
+        <h1 style="font-size: 18px;">
+            < VIDEO STREAM />
+        </h1>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="#">Movies</a></li>
+                <li><a href="#">Series</a></li>
+                <li><a href="#">TV Shows</a></li>
+                <li><a href="#">Browse By Language</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main class="container">
+        <div class="hero">
+            <video id="player" playsinline controls autoplay preload width="100%"></video>
+            <h2 id="video-title">HARRY POTTER AND THE PHILOSOPHER'S STONE</h2>
+            <p id="video-desc">Harry Potter, an eleven-year-old orphan, discovers that he is a wizard and is invited to
+                study at Hogwarts...</p>
+
+            <div class="buttons">
+                <!-- <button type="button" class="button">▶ Play</button> -->
+                <button type="button" class="button">More Info</button>
+                <!-- <details>
+                    <summary><button type="button" class="button">More Info</button></summary>
+                    <p>Director: Chris Columbus</p>
+                    <p>Writers: J.K. Rowling (novel), Steve Kloves (screenplay)</p>
+                    <p>Stars: Daniel Radcliffe, Rupert Grint, Richard Harris</p>
+                    <p>Genres: Adventure, Family, Fantasy</p>
+                    <p>Country: UK, USA</p>
+                    <p>Language: English</p>
+                    <p>Release Date: 10 November 2001</p>
+                    <p>Runtime: 152 min</p>
+                    <p>IMDb Rating: 7.6</p>
+                </details> -->
+            </div>
+        </div>
+
+
+    </main>
+    <footer>
+        <p>&copy;
+            < Video Stream />. All rights reserved
+        </p>
+        <ul>
+            <li>Privacy</li>
+            <li>Terms</li>
+            <li>Help</li>
+            <li>Devices</li>
+            <li>Media Center</li>
+            <li>Gift Cards</li>
+            <li>Legacy Notices</li>
+            <li>Account</li>
+        </ul>
+    </footer>
+
+
+    <script>
+        const baseURL = "http://localhost:3000";
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('player');
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('v');
+
+            if (!videoId) {
+                console.error('No video ID found in the URL');
+                return;
+            }
+
+            console.log(`Video ID: ${videoId}`);
+            // fetch(`${baseURL}/watch/${videoId}`)
+            //     .then(res => res.json())
+            //     .then(data => {
+            //         document.getElementById('video-title').textContent = data.file.title;
+            //         document.getElementById('video-desc').textContent = data.file.description;
+            //         video.setAttribute('poster', `${baseURL}/watch/${videoId}/poster.png`);
+            //     });
+
+            const source = `${baseURL}/watch/${videoId}/master.m3u8`;
+
+            const defaultOptions = {
+                controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                quality: {
+                    default: 0,
+                    options: [],
+                    forced: true,
+                    onChange: updateQuality
+                },
+                i18n: {
+                    qualityLabel: { 0: "Auto" }
+                },
+                previewThumbnails: {
+                    enabled: true,
+                    src: `${baseURL}/watch/${videoId}/thumbnails.vtt`
+                }
+            };
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    startLevel: -1, // Let it pick best based on bandwidth
+                    autoStartLoad: true,
+                    abrEwmaFastVoD: 1.0,
+                    abrEwmaSlowVoD: 3.0,
+                    abrBandWidthFactor: 0.8,
+                    abrBandWidthUpFactor: 0.7,
+                    maxBufferLength: 10, // Maximum buffer length in seconds
+                    maxBufferSize: 30 * 1000 * 1000, // Maximum buffer size (30MB)
+                });
+
+                hls.loadSource(source);
+                hls.attachMedia(video);
+                window.hls = hls;
+
+                let fragStartTime = 0; // to track the start time of a fragment download
+
+                hls.on(Hls.Events.FRAG_LOADING, (event, data) => {
+                    fragStartTime = Date.now(); // Record the time when chunk starts downloading
+                });
+
+                hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+                    const fragEndTime = Date.now();
+                    const downloadTime = (fragEndTime - fragStartTime) / 1000; // Time in seconds
+                    console.log(`Chunk download time: ${downloadTime}s`);
+
+                    // Get buffer info and decide whether to adjust the quality
+                    const bufferInfo = hls.bufferInfo;
+                    const bufferLength = bufferInfo.len; // in seconds
+                    const bufferSize = bufferInfo.total; // in bytes
+
+                    console.log(`Buffer Length: ${bufferLength}s, Buffer Size: ${bufferSize}bytes`);
+
+                    // If the buffer length is too large, switch to lower quality
+                    if (bufferLength > 5 || bufferSize > 30 * 1000 * 1000) {
+                        console.log('Buffer is too large, switching to lower quality...');
+                        if (hls.levels.length > 1) {
+                            hls.currentLevel = 0; // Switch to the lowest quality
+                        }
+                    }
+
+                    // If buffer length is small and download time is low, increase quality
+                    if (bufferLength < 5 && downloadTime < 3) {
+                        console.log('Buffer is small and download is fast, switching to higher quality...');
+                        hls.currentLevel = hls.levels.length - 1; // Switch to the highest quality
+                    }
+                });
+
+                hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+                    const availableQuality = hls.levels.map((l) => l.height);
+                    availableQuality.unshift(0); // Add auto
+                    defaultOptions.quality.options = availableQuality;
+                    new Plyr(video, defaultOptions);
+                });
+
+                hls.on(Hls.Events.FRAG_LOADED, () => {
+                    console.log("⏳ Bandwidth:", Math.round(hls.bandwidthEstimate / 1000), "kbps");
+                });
+
+                hls.on(Hls.Events.LEVEL_SWITCHED, function (_, data) {
+                    console.log("🔀 Switched to level (quality):", hls.levels[data.level].height + "p");
+                });
+
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.error('🔁 Network error. Retrying...');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.error('⚠️ Media error. Recovering...');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                hls.destroy();
+                                break;
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = source;
+                video.addEventListener('loadedmetadata', () => {
+                    new Plyr(video, defaultOptions);
+                });
+            }
+        });
+
+        function updateQuality(newQuality) {
+            if (newQuality === 'auto') {
+                window.hls.currentLevel = -1;
+            } else {
+                window.hls.levels.forEach((level, i) => {
+                    if (level.height === newQuality) {
+                        window.hls.currentLevel = i;
+                    }
+                });
+            }
+        }
+
+
+        //     window.onload = async () => {
+        //         const videoListContainer = document.getElementById("trending");
+        //         try {
+        //             // Fetch video list from the server
+        //             const response = await fetch(`${baseURL}/watch`);
+        //             // console.log(response.json())
+        //             const videos = await response.json();
+        //             console.log(videos.files)
+        //             if (videos.files.length === 0) {
+        //                 videoListContainer.innerHTML = "<p>No videos found.</p>";
+        //                 return;
+        //             }
+
+        //             // Create and append video links dynamically
+        //             videos.files.slice(0, 5).forEach(video => {
+        //                 // const videoLink = document.createElement("a");
+        //                 // videoLink.href = `./player.html?v=${video.videoId}`;
+        //                 // videoLink.textContent = video.title;
+        //                 // videoLink.style.display = "block"; // New line for each video
+        //                 // videoListContainer.appendChild(videoLink);
+        //                 videoListContainer.innerHTML += `<div class="movie1">
+        //     <a href="./player.html?v=${video.videoId}">
+        //       <img
+        //         src="${baseURL}/watch/${video.videoId}/poster.png"
+        //         alt="${video.title}"
+        //       />
+        //       <h4>${video.title}</h4>
+        //     </a>
+        //     </div>`
+        //             });
+
+        //         } catch (error) {
+        //             console.error("Error fetching videos:", error);
+        //             videoListContainer.innerHTML = "<p>Error loading videos.</p>";
+        //         }
+        //     }
+        // </script>
+</body>
+
+</html>

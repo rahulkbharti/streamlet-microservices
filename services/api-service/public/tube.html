@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xplay - Game Streaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            /* A slightly off-black for the main background */
+        }
+
+        .main-content-bg {
+            background-color: #18181B;
+            /* The main content area background */
+        }
+    </style>
+</head>
+
+<body class="text-white">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-20 bg-[#121212] p-4 flex flex-col items-center space-y-8 sticky top-0 h-screen">
+            <!-- Logo -->
+            <div class="w-10 h-10">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M20 0L25.8779 14.1221L40 20L25.8779 25.8779L20 40L14.1221 25.8779L0 20L14.1221 14.1221L20 0Z"
+                        fill="url(#paint0_linear_10_2)" />
+                    <defs>
+                        <linearGradient id="paint0_linear_10_2" x1="20" y1="0" x2="20" y2="40"
+                            gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#A855F7" />
+                            <stop offset="1" stop-color="#6D28D9" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <!-- Sidebar Icons -->
+            <nav class="flex flex-col items-center space-y-6">
+                <a href="#" class="p-3 bg-purple-600/20 text-purple-400 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </a>
+                <a href="#" class="p-3 text-gray-400 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                </a>
+                <a href="#" class="p-3 text-gray-400 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                </a>
+                <a href="#" class="p-3 text-gray-400 hover:bg-gray-700/50 rounded-lg transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 main-content-bg rounded-l-3xl p-6 md:p-10">
+            <!-- Header -->
+            <header class="flex flex-col md:flex-row justify-between items-center mb-10">
+                <div class="flex items-center space-x-8">
+                    <h1 class="text-3xl font-bold">XPLAY</h1>
+                    <nav class="hidden md:flex items-center space-x-6 text-gray-400">
+                        <a href="#" class="font-semibold text-white">TOP STREAMING</a>
+                        <a href="#" class="hover:text-white transition-colors">GAMES</a>
+                        <a href="#" class="hover:text-white transition-colors">TEAMS</a>
+                    </nav>
+                </div>
+
+                <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                    <div class="relative">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Search"
+                            class="bg-[#121212] rounded-full py-2 pl-10 pr-4 w-full md:w-auto focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    <button class="p-2 text-gray-400 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <img src="https://placehold.co/40x40/7c3aed/ffffff?text=M" alt="Mikael's avatar"
+                            class="rounded-full w-10 h-10 border-2 border-purple-500">
+                        <span class="hidden md:block">Mikael</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Hero Section -->
+            <section class="flex flex-col lg:flex-row gap-8 mb-12">
+                <!-- Left Side: Text -->
+                <div class="flex-1 flex flex-col justify-center">
+                    <h2 class="text-5xl md:text-7xl font-black tracking-tighter leading-none">PLAY, COMPETE, FOLLOW
+                        POPULAR STREAMERS</h2>
+                    <p class="mt-6 text-gray-400 max-w-md">The best streamers gather here to have a good time, be among
+                        us, join us!</p>
+                </div>
+                <!-- Right Side: Video Preview -->
+                <div class="flex-1">
+                    <div class="bg-cover bg-center rounded-2xl p-6 flex flex-col justify-between h-80"
+                        style="background-image: url('https://placehold.co/800x450/1e293b/ffffff?text=Dragon+Battle')">
+                        <div class="bg-black/50 text-center py-2 px-4 rounded-lg self-start">
+                            <p class="text-sm text-gray-300">Broadcast starts in</p>
+                            <p class="text-3xl font-bold tracking-widest">04:08</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="flex items-center justify-between text-gray-300">
+                                <div class="flex items-center space-x-4">
+                                    <button class="hover:text-white"><svg xmlns="http://www.w3.org/2000/svg"
+                                            class="h-6 w-6" fill="currentColor" viewBox="0 0 16 16">
+                                            <path
+                                                d="M5.5 5.5A.5.5 0 0 1 6 6v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5z" />
+                                        </svg></button>
+                                    <button class="hover:text-white"><svg xmlns="http://www.w3.org/2000/svg"
+                                            class="h-10 w-10" fill="currentColor" viewBox="0 0 16 16">
+                                            <path
+                                                d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z" />
+                                        </svg></button>
+                                </div>
+                                <div class="flex items-center space-x-2 flex-1 mx-4">
+                                    <span class="bg-purple-600 text-xs font-semibold px-2 py-1 rounded-md">COMING
+                                        SOON</span>
+                                    <div class="w-full bg-gray-600 rounded-full h-1.5">
+                                        <div class="bg-purple-500 h-1.5 rounded-full" style="width: 20%"></div>
+                                    </div>
+                                    <span class="text-xs">00:00</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="hover:text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20"
+                                            height="20" fill="currentColor" viewBox="0 0 16 16">
+                                            <path
+                                                d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1h-4zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5zM.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5zm15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5z" />
+                                        </svg></button>
+                                </div>
+                            </div>
+                            <p class="text-sm mt-3">Battle for the castle with Franck Jourdan and Eva703</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Streams of the day -->
+            <section class="mb-12">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold">Streams of the day</h3>
+                    <a href="#"
+                        class="bg-gray-800 hover:bg-gray-700 text-sm px-4 py-2 rounded-full transition-colors">View
+                        all</a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <!-- Stream Card 1 -->
+                    <div class="bg-[#121212] rounded-xl overflow-hidden group">
+                        <div class="relative">
+                            <img src="https://placehold.co/400x225/3b82f6/ffffff?text=Game+1"
+                                alt="Serious fight night with Rick"
+                                class="w-full group-hover:scale-105 transition-transform duration-300">
+                            <span
+                                class="absolute top-3 left-3 bg-red-600 text-xs font-semibold px-2 py-1 rounded-md">LIVE</span>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold truncate">Serious fight night with Rick</h4>
+                            <div class="flex items-center mt-2 text-sm text-gray-400">
+                                <img src="https://placehold.co/24x24/4ade80/ffffff?text=RT" alt="Mr.Rick Tomson"
+                                    class="w-6 h-6 rounded-full mr-2">
+                                <span>Mr.Rick Tomson</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Stream Card 2 -->
+                    <div class="bg-[#121212] rounded-xl overflow-hidden group">
+                        <div class="relative">
+                            <img src="https://placehold.co/400x225/f97316/ffffff?text=Game+2"
+                                alt="Pumpkin Party in Orizona"
+                                class="w-full group-hover:scale-105 transition-transform duration-300">
+                            <span
+                                class="absolute top-3 left-3 bg-red-600 text-xs font-semibold px-2 py-1 rounded-md">LIVE</span>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold truncate">Pumpkin Party in Orizona</h4>
+                            <div class="flex items-center mt-2 text-sm text-gray-400">
+                                <img src="https://placehold.co/24x24/f43f5e/ffffff?text=MF" alt="Milena Foster"
+                                    class="w-6 h-6 rounded-full mr-2">
+                                <span>Milena Foster</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Stream Card 3 -->
+                    <div class="bg-[#121212] rounded-xl overflow-hidden group">
+                        <div class="relative">
+                            <img src="https://placehold.co/400x225/8b5cf6/ffffff?text=Game+3"
+                                alt="Serious fight night with Rick"
+                                class="w-full group-hover:scale-105 transition-transform duration-300">
+                            <span
+                                class="absolute top-3 left-3 bg-red-600 text-xs font-semibold px-2 py-1 rounded-md">LIVE</span>
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold truncate">Serious fight night with Rick</h4>
+                            <div class="flex items-center mt-2 text-sm text-gray-400">
+                                <img src="https://placehold.co/24x24/4ade80/ffffff?text=RT" alt="Mr.Rick Tomson"
+                                    class="w-6 h-6 rounded-full mr-2">
+                                <span>Mr.Rick Tomson</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Stream Card 4 -->
+                    <div class="bg-[#121212] rounded-xl overflow-hidden group">
+                        <div class="relative">
+                            <img src="https://placehold.co/400x225/14b8a6/ffffff?text=Game+4"
+                                alt="Serious fight night with Rick"
+                                class="w-full group-hover:scale-105 transition-transform duration-300">
+                        </div>
+                        <div class="p-4">
+                            <h4 class="font-bold truncate">Serious fight night with Rick</h4>
+                            <div class="flex items-center mt-2 text-sm text-gray-400">
+                                <img src="https://placehold.co/24x24/3b82f6/ffffff?text=BG" alt="Bob Game450"
+                                    class="w-6 h-6 rounded-full mr-2">
+                                <span>Bob Game450</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Top Authors Section -->
+            <section>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold">Top authors</h3>
+                    <a href="#"
+                        class="bg-gray-800 hover:bg-gray-700 text-sm px-4 py-2 rounded-full transition-colors">View
+                        all</a>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    <!-- Author Card -->
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/100x100/ec4899/ffffff?text=A1" alt="Author 1"
+                            class="w-24 h-24 rounded-full border-4 border-purple-500">
+                        <h4 class="font-semibold mt-2">Author One</h4>
+                    </div>
+                    <!-- Author Card -->
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/100x100/84cc16/ffffff?text=A2" alt="Author 2"
+                            class="w-24 h-24 rounded-full border-4 border-transparent">
+                        <h4 class="font-semibold mt-2">Author Two</h4>
+                    </div>
+                    <!-- Author Card -->
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/100x100/22d3ee/ffffff?text=A3" alt="Author 3"
+                            class="w-24 h-24 rounded-full border-4 border-transparent">
+                        <h4 class="font-semibold mt-2">Author Three</h4>
+                    </div>
+                    <!-- Author Card -->
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/100x100/f59e0b/ffffff?text=A4" alt="Author 4"
+                            class="w-24 h-24 rounded-full border-4 border-transparent">
+                        <h4 class="font-semibold mt-2">Author Four</h4>
+                    </div>
+                    <!-- Author Card -->
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/100x100/ef4444/ffffff?text=A5" alt="Author 5"
+                            class="w-24 h-24 rounded-full border-4 border-transparent">
+                        <h4 class="font-semibold mt-2">Author Five</h4>
+                    </div>
+                    <!-- Author Card -->
+                    <div class="flex flex-col items-center">
+                        <img src="https://placehold.co/100x100/6366f1/ffffff?text=A6" alt="Author 6"
+                            class="w-24 h-24 rounded-full border-4 border-transparent">
+                        <h4 class="font-semibold mt-2">Author Six</h4>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+</body>
+
+</html>

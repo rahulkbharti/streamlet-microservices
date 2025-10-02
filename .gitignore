@@ -1,0 +1,12 @@
+/services/api-service/node_modules
+/services/content-service/node_modules
+/services/transcoder-service/node_modules
+/services/streams
+/services/uploads
+**/.env.*
+**/dist
+**/build
+**/node_modules
+**/coverage
+**/.next
+**/.turbo

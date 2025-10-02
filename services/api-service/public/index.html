@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>BullMQ Video Uploader</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 12px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        #progress-area {
+            margin-top: 20px;
+        }
+
+        #progress-bar-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            /* Ensures the inner bar has rounded corners */
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 25px;
+            background-color: #28a745;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            border-radius: 5px;
+            transition: width 0.4s ease-in-out;
+        }
+
+        #status {
+            text-align: center;
+            margin-top: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Upload & Process Video</h1>
+        <form id="uploadForm">
+            <input type="file" name="video" id="videoFile" accept="video/*" required />
+            <button type="submit" id="submitButton">Upload and Process</button>
+        </form>
+
+        <div id="progress-area">
+            <div id="progress-bar-container">
+                <div id="progress-bar">0%</div>
+            </div>
+            <p id="status">Please select a file to begin.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io("http://localhost:4000");
+        const form = document.getElementById('uploadForm');
+        const videoFile = document.getElementById('videoFile');
+        const statusEl = document.getElementById('status');
+        const progressBar = document.getElementById('progress-bar');
+        const submitButton = document.getElementById('submitButton');
+
+        let socketId = null;
+
+        // 1. Establish connection and get the unique socket ID
+        socket.on('connect', () => {
+            socketId = socket.id;
+            console.log('Connected to server with ID:', socketId);
+
+        });
+
+        // 2. Handle the form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // if (!videoFile.files[0]) {
+            //     alert('Please select a file first.');
+            //     return;
+            // }
+            if (!socketId) {
+                alert('Not yet connected to the server. Please wait a moment.');
+                return;
+            }
+
+            // Disable the button to prevent multiple submissions
+            submitButton.disabled = true;
+            submitButton.textContent = 'Uploading...';
+            statusEl.textContent = 'Uploading file to the server...';
+
+            // Reset progress bar
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            // Create a FormData object to send the file and socket ID
+            const formData = new FormData();
+            formData.append('video', videoFile.files[0]);
+            formData.append('socketId', socketId);
+
+            try {
+                // Send the file to the server's /upload API endpoint
+                const response = await fetch('http://localhost:4000/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || 'Upload failed');
+                }
+                statusEl.textContent = result.message; // e.g., "File queued for processing."
+
+            } catch (error) {
+                statusEl.textContent = 'Upload Error: ' + error.message;
+                submitButton.disabled = false; // Re-enable the button on failure
+                submitButton.textContent = 'Upload and Process';
+                console.error('Upload error:', error);
+            }
+        });
+
+        // 3. Listen for real-time progress updates from the server
+        socket.on('video-progress', (data) => {
+            console.log('Progress update received:', data);
+
+            const percentage = (data.progress || 0).toFixed(2);
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+
+            if (data.status === 'processing') {
+                statusEl.textContent = 'Processing in the background...' + (data.res ? ` [${data.res}]` : '');
+            } else if (data.status === 'complete') {
+                statusEl.innerHTML = `🎉 Processing complete! Video is ready at: <a href="${data.url}" target="_blank">${data.url}</a>`;
+                submitButton.disabled = false; // Re-enable for another upload
+                submitButton.textContent = 'Upload and Process';
+            } else if (data.status === 'failed') {
+                statusEl.textContent = `Processing failed: ${data.reason}`;
+                progressBar.style.backgroundColor = '#dc3545'; // Change color to red
+                submitButton.disabled = false;
+                submitButton.textContent = 'Upload and Process';
+            }
+        });
+    </script>
+</body>
+
+</html>

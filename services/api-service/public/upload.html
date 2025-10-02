@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Direct S3 Upload</title>
+</head>
+
+<body>
+    <h1>Upload a File Directly to B2</h1>
+    <input type="file" id="file-input" />
+    <p id="status">Please select a file to upload.</p>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const statusText = document.getElementById('status');
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            statusText.textContent = 'Preparing to upload...';
+
+            try {
+                // 1. Request the pre-signed URL from our server
+                const response = await fetch('http://localhost:4000/generate-upload-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contentType: file.type })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get pre-signed URL.');
+                }
+
+                const { url, key } = await response.json();
+                statusText.textContent = 'Uploading...';
+
+                // 2. Upload the file directly to Backblaze B2 using the pre-signed URL
+                const uploadResponse = await fetch(url, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('Upload failed.');
+                }
+
+                statusText.textContent = `Upload complete! File key: ${key}`;
+
+                // 3. (Optional) Notify your server that the upload is complete
+                // You would create another endpoint like /upload-complete and send the 'key'.
+                console.log('Upload successful. File available at key:', key);
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusText.textContent = `Upload failed: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+
+</html>
