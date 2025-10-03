@@ -100,32 +100,33 @@ async function main() {
                 return res.status(400).json({ error: 'FileName required' });
             }
 
-            console.log('🔄 Authorizing B2...');
-
-            // ✅ WAIT FOR AUTHORIZATION TO COMPLETE
-            await b2.authorize();
-            console.log('✅ B2 Authorized');
-
             // Simple unique name
-            const uniqueName = `uploads/${Date.now()}_${fileName}`;
+            const uniqueName = `uploads/${Date.now()}_${fileName.replace(/ /g, '_')}`;
 
-            console.log('📦 Getting upload URL...');
-            const uploadUrlResponse = await b2.getUploadUrl({
-                bucketId: '8830259d7bf996ff9a9a061b'
+            // Generate pre-signed URL for direct upload
+            const command = new PutObjectCommand({
+                Bucket: "stream-m3u8", // Tumhara bucket name yahan dalo
+                Key: uniqueName,
+                ContentType: 'video/mp4' // Ya file type ke hisab se
             });
 
-            console.log('✅ Upload URL received');
+            // Create pre-signed URL (client direct upload kar sakega)
+            const presignedUrl = await getSignedUrl(s3, command, {
+                expiresIn: 3600 // 1 hour
+            });
+
+            console.log('✅ Pre-signed URL generated');
 
             res.json({
-                uploadUrl: uploadUrlResponse.data.uploadUrl,
-                authToken: uploadUrlResponse.data.authorizationToken,
-                fileName: uniqueName
+                uploadUrl: presignedUrl,
+                fileName: uniqueName,
+                method: 'PUT' // AWS SDK PUT method use karta hai
             });
 
         } catch (error) {
-            console.error('💥 Error:', error.response?.data || error.message);
+            console.error('💥 Error:', error);
             res.status(500).json({
-                error: error.response?.data?.message || error.message
+                error: error.message
             });
         }
     });

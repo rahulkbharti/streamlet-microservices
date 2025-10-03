@@ -10,13 +10,14 @@ const b2 = new B2({
     applicationKey: process.env.B2_APPLICATION_KEY
 });
 
-
 const DownloadFromB2 = async ({ key, onProgress }) => {
     if (!key) throw new Error('Key is required for download.');
     try {
         await b2.authorize();
-        const fileName = key.split('/').pop();
-        const outputPath = path.join(process.cwd(), 'downloads', fileName);
+
+        const fileName = key; // Keep 'uploads/filename.mp4'
+        const outputFileName = key.split('/').pop();
+        const outputPath = path.join(process.cwd(), 'downloads', outputFileName);
 
         // Ensure downloads directory exists
         const downloadsDir = path.dirname(outputPath);
@@ -24,21 +25,41 @@ const DownloadFromB2 = async ({ key, onProgress }) => {
             fs.mkdirSync(downloadsDir, { recursive: true });
         }
 
-        console.log(`Downloading ${fileName}...`);
+        console.log(`Downloading ${fileName} from B2...`);
 
+        // ✅ FIX: Use responseType: 'arraybuffer' to get proper binary data
         const response = await b2.downloadFileByName({
             bucketName: BUCKET_NAME,
             fileName: fileName,
+            responseType: 'arraybuffer', // ✅ Important for binary files
             onDownloadProgress: (event) => {
                 const percent = Math.round((event.loaded / event.total) * 100);
-                process.stdout.write(`Download Progress: ${percent}% (${event.loaded}/${event.total} bytes)`);
+                console.log(`Download Progress: ${percent}% (${event.loaded}/${event.total} bytes)`);
                 if (onProgress) onProgress(percent, event.loaded, event.total);
             }
         });
 
-        // Save file to disk
-        fs.writeFileSync(outputPath, response.data);
+        // ✅ FIX: Properly save binary data
+        const data = response.data;
+
+        // Check if data is Buffer, if not convert it
+        let fileData;
+        if (Buffer.isBuffer(data)) {
+            fileData = data;
+        } else if (data instanceof ArrayBuffer) {
+            fileData = Buffer.from(data);
+        } else {
+            fileData = Buffer.from(JSON.stringify(data), 'utf8');
+        }
+
+        // ✅ Save file with proper binary format
+        fs.writeFileSync(outputPath, fileData);
         console.log(`✅ File downloaded successfully: ${outputPath}`);
+        console.log(`📊 File size: ${fileData.length} bytes`);
+
+        // Verify file was written correctly
+        const stats = fs.statSync(outputPath);
+        console.log(`📁 Saved file size: ${stats.size} bytes`);
 
         return outputPath;
 

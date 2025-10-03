@@ -51,7 +51,7 @@
 </head>
 
 <body>
-    <h1>Upload a File Directly to B2</h1>
+    <h1>Upload a File Directly to B2 (AWS SDK)</h1>
     <input type="file" id="file-input" />
 
     <div class="progress-container" id="progressContainer">
@@ -64,17 +64,14 @@
         const socket = io("http://localhost:4000");
         let socketId = null;
 
-        // 1. Establish connection and get the unique socket ID
         socket.on('connect', () => {
             socketId = socket.id;
             console.log('Connected to server with ID:', socketId);
-
         });
 
         function updateProgress(percent) {
             const progressBar = document.getElementById('progressBar');
             const progressContainer = document.getElementById('progressContainer');
-
             progressBar.style.width = percent + '%';
             progressBar.textContent = Math.round(percent) + '%';
             progressContainer.style.display = 'block';
@@ -86,26 +83,12 @@
             statusEl.className = `status ${type}`;
         }
 
-        const startProcess = async ({ key, socketId }) => {
-            if (!key || !socketId) {
-                console.error('Key and socketId are required to start processing.');
-                return;
-            }
-            const response = await fetch('http://localhost:4000/job-add', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key, socketId })
-            });
-            const data = await response.json();
-            console.log(data);
-        }
-
         async function uploadFile(file) {
             try {
                 showStatus('Getting upload URL...', 'uploading');
                 updateProgress(0);
 
-                // 1. Get upload URL from server
+                // 1. Get pre-signed URL from server
                 const response = await fetch('http://localhost:4000/get-upload-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -119,18 +102,14 @@
                 const data = await response.json();
                 console.log('Server response:', data);
 
-                if (!data.uploadUrl || !data.authToken || !data.fileName) {
+                if (!data.uploadUrl || !data.fileName) {
                     throw new Error('Invalid response from server');
                 }
 
                 showStatus('Uploading to Backblaze...', 'uploading');
                 updateProgress(5);
 
-                // ✅ Clean filename
-                const cleanFileName = data.fileName.replace(/ /g, '_');
-                console.log('Cleaned fileName:', cleanFileName);
-
-                // 2. Upload to Backblaze with progress tracking
+                // 2. Upload using XMLHttpRequest for progress tracking
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
 
@@ -147,23 +126,19 @@
                         }
                     });
 
-                    xhr.addEventListener('load', async () => {
+                    xhr.addEventListener('load', () => {
                         if (xhr.status === 200) {
-                            try {
-                                const response = JSON.parse(xhr.responseText);
-                                console.log('✅ Upload successful!', response);
-                                // await startProcess({ key: response.fileName, socketId }); // Replace with actual socketId
-                                updateProgress(100);
-                                showStatus('✅ Upload completed successfully!', 'success');
-                                resolve({
-                                    success: true,
-                                    data: response,
-                                    fileId: response.fileId,
-                                    fileName: response.fileName
-                                });
-                            } catch (e) {
-                                reject(new Error('Failed to parse response: ' + e.message));
-                            }
+                            updateProgress(100);
+                            showStatus('✅ Upload completed successfully! File immediately visible!', 'success');
+
+                            console.log('✅ File uploaded via AWS SDK - Immediate visibility');
+
+                            resolve({
+                                success: true,
+                                fileName: data.fileName,
+                                status: xhr.status,
+                                message: 'File uploaded successfully'
+                            });
                         } else {
                             reject(new Error(`Upload failed: ${xhr.status} - ${xhr.responseText}`));
                         }
@@ -177,14 +152,11 @@
                         reject(new Error('Upload was cancelled'));
                     });
 
-                    // Start the upload
-                    xhr.open('POST', data.uploadUrl);
+                    // Start the upload with PUT method
+                    xhr.open('PUT', data.uploadUrl);
 
-                    // Set headers
-                    xhr.setRequestHeader('Authorization', data.authToken);
-                    xhr.setRequestHeader('X-Bz-File-Name', cleanFileName);
-                    xhr.setRequestHeader('Content-Type', 'b2/x-auto');
-                    xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
+                    // Set headers for AWS SDK pre-signed URL
+                    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
 
                     xhr.send(file);
                 });

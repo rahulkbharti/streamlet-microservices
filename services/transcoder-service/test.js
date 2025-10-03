@@ -15,7 +15,7 @@ const testDownload = async () => {
         process.stdout.write(`\rProgress: ${percent}% (${loaded}/${total} bytes)`);
     };
     try {
-        const filePath = await DownloadFromB2({ key: 'uploads/1759488642774_Big_Buck_Bunny_1080_10s_5MB.mp4', onProgress });
+        const filePath = await DownloadFromB2({ key: 'uploads/1759487795658_Big_Buck_Bunny_1080_10s_5MB.mp4', onProgress });
         console.log("\nDownload completed:", filePath);
     } catch (error) {
         console.error("Download error:", error);
