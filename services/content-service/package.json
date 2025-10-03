@@ -13,8 +13,11 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "axios": "^1.12.2",
+    "backblaze-b2": "^1.7.1",
     "bullmq": "^5.59.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0"
   },
   "devDependencies": {

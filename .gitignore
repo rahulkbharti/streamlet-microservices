@@ -5,6 +5,7 @@
 /services/uploads
 **/.env.*
 **/dist
+**/streams
 **/build
 **/node_modules
 **/coverage

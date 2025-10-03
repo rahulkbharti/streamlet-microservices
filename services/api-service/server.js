@@ -9,9 +9,13 @@ import { randomBytes } from 'crypto';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from "dotenv";
-
+import B2 from "backblaze-b2";
 dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 
+const b2 = new B2({
+    applicationKeyId: process.env.B2_KEY_ID,
+    applicationKey: process.env.B2_APPLICATION_KEY
+});
 // --- Basic Setup ---
 const app = express();
 const httpServer = createServer(app);
@@ -88,36 +92,52 @@ async function main() {
         }
     });
 
-    app.post('/generate-upload-url', async (req, res) => {
+    app.post('/get-upload-url', async (req, res) => {
         try {
-            // Generate a unique file name to prevent overwrites
-            const randomId = randomBytes(8).toString('hex');
+            const { fileName } = req.body;
 
-            // Create the command to put an object in the bucket
-            const command = new PutObjectCommand({
-                Bucket: process.env.BUCKET_NAME,
-                Key: randomId,
-                // You can also add ContentType: req.body.contentType if you want to be specific
-                ContentType: req.body.contentType,
+            if (!fileName) {
+                return res.status(400).json({ error: 'FileName required' });
+            }
+
+            console.log('🔄 Authorizing B2...');
+
+            // ✅ WAIT FOR AUTHORIZATION TO COMPLETE
+            await b2.authorize();
+            console.log('✅ B2 Authorized');
+
+            // Simple unique name
+            const uniqueName = `uploads/${Date.now()}_${fileName}`;
+
+            console.log('📦 Getting upload URL...');
+            const uploadUrlResponse = await b2.getUploadUrl({
+                bucketId: '8830259d7bf996ff9a9a061b'
             });
 
-            // Generate the pre-signed URL, valid for 10 minutes
-            // The generated pre-signed URL allows uploading only one file with the specified key until it expires (10 minutes).
-            const preSignedUrl = await getSignedUrl(s3, command, {
-                expiresIn: 600, // URL expires in 10 minutes
+            console.log('✅ Upload URL received');
+
+            res.json({
+                uploadUrl: uploadUrlResponse.data.uploadUrl,
+                authToken: uploadUrlResponse.data.authorizationToken,
+                fileName: uniqueName
             });
 
-            // console.log("Generated pre-signed URL for upload:", preSignedUrl);
-
-            // Send the URL back to the client
-            res.status(200).json({
-                url: preSignedUrl,
-                key: randomId // Send the key back so you can save it later
-            });
         } catch (error) {
-            console.error("Error generating pre-signed URL:", error);
-            res.status(500).send("Error generating upload URL.");
+            console.error('💥 Error:', error.response?.data || error.message);
+            res.status(500).json({
+                error: error.response?.data?.message || error.message
+            });
         }
+    });
+    app.post('/job-add', async (req, res) => {
+        const { key, socketId } = req.body;
+        if (!key || !socketId) {
+            return res.status(400).json({ error: 'key and socketId are required.' });
+        }
+        const job = await videoQueue.add('process-video', { key });
+        console.log(`[SERVER] Added job ${job.id} for socket: ${socketId}`);
+        jobIdToSocketIdMap.set(job.id, socketId);
+        res.status(200).json({ message: 'Job queued for processing.', jobId: job.id });
     });
 
     app.post('/upload', upload.single('video'), async (req, res) => {

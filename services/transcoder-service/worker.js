@@ -4,12 +4,18 @@ import { Worker } from 'bullmq';
 import processVideo from './process.js';
 // --- BullMQ & Redis Configuration ---
 const redisOptions = { host: '127.0.0.1', port: 6379 };
+import DownloadFromB2 from './b2-download.js';
+import UploadToB2 from './b2-upload.js';
 
 // --- The Processor Function ---
 // This async function is where each job is processed.
 // The `job` object contains the data and methods to update progress.
 const processor = async (job) => {
     console.log(`[WORKER] Starting job ${job.id}. Data:`, job.data);
+    // Step 1 : Download The video file (.mp4) from blackblaze
+
+    // Step 2 : Process the video File on server (worker)
+    // Step 3 : Upload the chunks files on blackblaze.
 
     // Simulate a multi-step process with granular updates
     const updateFn = async ({ res, progress }) => {

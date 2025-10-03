@@ -3,61 +3,214 @@
 
 <head>
     <title>Direct S3 Upload</title>
+    <style>
+        .progress-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 10px;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            transition: width 0.3s ease;
+        }
+
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .uploading {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 
 <body>
     <h1>Upload a File Directly to B2</h1>
     <input type="file" id="file-input" />
-    <p id="status">Please select a file to upload.</p>
+
+    <div class="progress-container" id="progressContainer">
+        <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <p id="status" class="status">Please select a file to upload.</p>
 
     <script>
-        const fileInput = document.getElementById('file-input');
-        const statusText = document.getElementById('status');
+        const socket = io("http://localhost:4000");
+        let socketId = null;
 
-        fileInput.addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
+        // 1. Establish connection and get the unique socket ID
+        socket.on('connect', () => {
+            socketId = socket.id;
+            console.log('Connected to server with ID:', socketId);
 
-            statusText.textContent = 'Preparing to upload...';
+        });
 
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('progressBar');
+            const progressContainer = document.getElementById('progressContainer');
+
+            progressBar.style.width = percent + '%';
+            progressBar.textContent = Math.round(percent) + '%';
+            progressContainer.style.display = 'block';
+        }
+
+        function showStatus(message, type = 'uploading') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        const startProcess = async ({ key, socketId }) => {
+            if (!key || !socketId) {
+                console.error('Key and socketId are required to start processing.');
+                return;
+            }
+            const response = await fetch('http://localhost:4000/job-add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, socketId })
+            });
+            const data = await response.json();
+            console.log(data);
+        }
+
+        async function uploadFile(file) {
             try {
-                // 1. Request the pre-signed URL from our server
-                const response = await fetch('http://localhost:4000/generate-upload-url', {
+                showStatus('Getting upload URL...', 'uploading');
+                updateProgress(0);
+
+                // 1. Get upload URL from server
+                const response = await fetch('http://localhost:4000/get-upload-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contentType: file.type })
+                    body: JSON.stringify({ fileName: file.name })
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to get pre-signed URL.');
+                    throw new Error(`Server error: ${response.status}`);
                 }
 
-                const { url, key } = await response.json();
-                statusText.textContent = 'Uploading...';
+                const data = await response.json();
+                console.log('Server response:', data);
 
-                // 2. Upload the file directly to Backblaze B2 using the pre-signed URL
-                const uploadResponse = await fetch(url, {
-                    method: 'PUT',
-                    body: file,
-                    headers: {
-                        'Content-Type': file.type
-                    }
+                if (!data.uploadUrl || !data.authToken || !data.fileName) {
+                    throw new Error('Invalid response from server');
+                }
+
+                showStatus('Uploading to Backblaze...', 'uploading');
+                updateProgress(5);
+
+                // ✅ Clean filename
+                const cleanFileName = data.fileName.replace(/ /g, '_');
+                console.log('Cleaned fileName:', cleanFileName);
+
+                // 2. Upload to Backblaze with progress tracking
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+
+                    // Progress tracking
+                    xhr.upload.addEventListener('progress', (event) => {
+                        if (event.lengthComputable) {
+                            const percentComplete = (event.loaded / event.total) * 100;
+                            updateProgress(percentComplete);
+
+                            // Show detailed status
+                            const loadedMB = (event.loaded / (1024 * 1024)).toFixed(2);
+                            const totalMB = (event.total / (1024 * 1024)).toFixed(2);
+                            showStatus(`Uploading: ${loadedMB}MB / ${totalMB}MB (${Math.round(percentComplete)}%)`, 'uploading');
+                        }
+                    });
+
+                    xhr.addEventListener('load', async () => {
+                        if (xhr.status === 200) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                console.log('✅ Upload successful!', response);
+                                // await startProcess({ key: response.fileName, socketId }); // Replace with actual socketId
+                                updateProgress(100);
+                                showStatus('✅ Upload completed successfully!', 'success');
+                                resolve({
+                                    success: true,
+                                    data: response,
+                                    fileId: response.fileId,
+                                    fileName: response.fileName
+                                });
+                            } catch (e) {
+                                reject(new Error('Failed to parse response: ' + e.message));
+                            }
+                        } else {
+                            reject(new Error(`Upload failed: ${xhr.status} - ${xhr.responseText}`));
+                        }
+                    });
+
+                    xhr.addEventListener('error', () => {
+                        reject(new Error('Upload failed due to network error'));
+                    });
+
+                    xhr.addEventListener('abort', () => {
+                        reject(new Error('Upload was cancelled'));
+                    });
+
+                    // Start the upload
+                    xhr.open('POST', data.uploadUrl);
+
+                    // Set headers
+                    xhr.setRequestHeader('Authorization', data.authToken);
+                    xhr.setRequestHeader('X-Bz-File-Name', cleanFileName);
+                    xhr.setRequestHeader('Content-Type', 'b2/x-auto');
+                    xhr.setRequestHeader('X-Bz-Content-Sha1', 'do_not_verify');
+
+                    xhr.send(file);
                 });
 
-                if (!uploadResponse.ok) {
-                    throw new Error('Upload failed.');
-                }
-
-                statusText.textContent = `Upload complete! File key: ${key}`;
-
-                // 3. (Optional) Notify your server that the upload is complete
-                // You would create another endpoint like /upload-complete and send the 'key'.
-                console.log('Upload successful. File available at key:', key);
-
             } catch (error) {
-                console.error('Error:', error);
-                statusText.textContent = `Upload failed: ${error.message}`;
+                console.error('❌ Upload error:', error);
+                showStatus(`❌ Error: ${error.message}`, 'error');
+                updateProgress(0);
+                document.getElementById('progressContainer').style.display = 'none';
             }
+        }
+
+        // Usage
+        document.getElementById('file-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Reset UI
+                document.getElementById('progressContainer').style.display = 'none';
+                updateProgress(0);
+
+                await uploadFile(file);
+            }
+        });
+
+        socket.on('video-progress', (data) => {
+            console.log('Progress update received:', data);
         });
     </script>
 </body>
