@@ -2,6 +2,7 @@ import B2 from "backblaze-b2";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
+import { generateVideoId } from "./nameGenerator.js";
 
 dotenv.config({ path: '.env.development' });
 const BUCKET_NAME = 'stream-m3u8';
@@ -16,7 +17,7 @@ const DownloadFromB2 = async ({ key, onProgress }) => {
         await b2.authorize();
 
         const fileName = key; // Keep 'uploads/filename.mp4'
-        const outputFileName = key.split('/').pop();
+        const outputFileName = generateVideoId();
         const outputPath = path.join(process.cwd(), 'downloads', outputFileName);
 
         // Ensure downloads directory exists
@@ -61,7 +62,7 @@ const DownloadFromB2 = async ({ key, onProgress }) => {
         const stats = fs.statSync(outputPath);
         console.log(`📁 Saved file size: ${stats.size} bytes`);
 
-        return outputPath;
+        return outputFileName;
 
     } catch (error) {
         console.error('❌ Download failed:', error);

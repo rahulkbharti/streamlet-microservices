@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 // Directories
 // const UPLOAD_DIR = path.resolve(__dirname, 'uploads');
-const OUTPUT_DIR = path.resolve(__dirname, '../streams');
+const OUTPUT_DIR = path.resolve(__dirname, './streams');
 if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
@@ -24,7 +24,6 @@ const RESOLUTIONS = [
     { name: '240p', width: 426, height: 240 },
     { name: '144p', width: 256, height: 144 },
 ];
-
 
 // Get video metadata
 const getVideoMetadata = (sourcePath) =>

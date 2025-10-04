@@ -151,7 +151,6 @@
                     xhr.addEventListener('abort', () => {
                         reject(new Error('Upload was cancelled'));
                     });
-
                     // Start the upload with PUT method
                     xhr.open('PUT', data.uploadUrl);
 
@@ -169,6 +168,15 @@
             }
         }
 
+        const scheduleJob = async (fileName, socketId) => {
+            const responce = await fetch(`http://localhost:4000/schedule-job`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: fileName, socketId })
+            });
+            const responceData = await responce.json();
+            console.log('Notify response:', responceData);
+        }
         // Usage
         document.getElementById('file-input').addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -177,7 +185,11 @@
                 document.getElementById('progressContainer').style.display = 'none';
                 updateProgress(0);
 
-                await uploadFile(file);
+                const result = await uploadFile(file);
+                console.log('Upload result:', result);
+                if (result && result.success) {
+                    await scheduleJob(result.fileName, socketId);
+                }
             }
         });
 

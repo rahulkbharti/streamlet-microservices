@@ -1,5 +1,4 @@
 import express from "express";
-import path from "path";
 import B2 from "backblaze-b2";
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.development' });
@@ -10,6 +9,7 @@ const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,
     applicationKey: process.env.B2_APPLICATION_KEY
 });
+
 const tokens = {};
 
 const getToken = async (videoId) => {
@@ -36,10 +36,11 @@ const router = express.Router();
 router.get('/:videoId/master.m3u8', async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(videoId);
+        const token = await getToken(`streams/${videoId}`);
+        console.log("Got The Token", token)
         if (!token) return res.status(500).send("Failed to generate token");
 
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/${videoId}/master.m3u8?Authorization=${token}`;
+        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/master.m3u8?Authorization=${token}`;
         const response = await fetch(URL);
 
         if (!response.ok) {
@@ -64,7 +65,7 @@ router.get('/:videoId/:resolution/playlist.m3u8', async (req, res) => {
     try {
         const { videoId, resolution } = req.params;
         const { Authorization } = req.query;
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/${videoId}/${resolution}/playlist.m3u8?Authorization=${Authorization}`;
+        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${resolution}/playlist.m3u8?Authorization=${Authorization}`;
         const response = await fetch(URL);
 
         if (!response.ok) {
@@ -89,7 +90,7 @@ router.get('/:videoId/:resolution/:segment', async (req, res) => {
     try {
         const { videoId, resolution, segment } = req.params;
         const { Authorization } = req.query;
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/${videoId}/${resolution}/${segment}?Authorization=${Authorization}`;
+        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${resolution}/${segment}?Authorization=${Authorization}`;
         return res.redirect(URL);
     } catch (err) {
         console.error(err);
@@ -103,10 +104,10 @@ router.get('/:videoId/:resolution/:segment', async (req, res) => {
 router.get('/:videoId/thumbnails.vtt', async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(videoId);
+        const token = await getToken(`streams/${videoId}`);
         if (!token) return res.status(500).send("Failed to generate token");
 
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/${videoId}/thumbnails.vtt?Authorization=${token}`;
+        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/thumbnails.vtt?Authorization=${token}`;
         const response = await fetch(URL);
 
         if (!response.ok) {
@@ -135,7 +136,7 @@ router.get('/:videoId/previews/:thumbnail', (req, res) => {
     try {
         const { videoId, thumbnail } = req.params;
         const { Authorization } = req.query;
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/${videoId}/previews/${thumbnail}?Authorization=${Authorization}`;
+        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/previews/${thumbnail}?Authorization=${Authorization}`;
         return res.redirect(URL);
     } catch (err) {
         console.error(err);
@@ -146,3 +147,4 @@ router.get('/:videoId/previews/:thumbnail', (req, res) => {
 
 
 export default router;
+

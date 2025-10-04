@@ -10,6 +10,8 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from "dotenv";
 import B2 from "backblaze-b2";
+import Redis from 'ioredis';
+
 dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
 
 const b2 = new B2({
@@ -39,7 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 const storage = multer.diskStorage({
-    destination: '../uploads/',
+    destination: './uploads/',
     filename: (req, file, cb) => {
         const ext = file.originalname.split('.').pop();
         const randomId = randomBytes(8).toString('hex');
@@ -59,18 +61,21 @@ const s3 = new S3Client({
 const upload = multer({ storage });
 
 // --- BullMQ & Redis Configuration ---
-const redisOptions = { host: '127.0.0.1', port: 6379 };
-const videoQueue = new Queue('video-processing', { connection: redisOptions });
+// const redisOptions = { host: '127.0.0.1', port: 6379 };
+const connection = new Redis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: null
+});
+const videoQueue = new Queue('video-processing', { connection });
 
 async function main() {
     const jobIdToSocketIdMap = new Map();
-    const queueEvents = new QueueEvents('video-processing', { connection: redisOptions });
+    const queueEvents = new QueueEvents('video-processing', { connection });
 
     queueEvents.on('progress', ({ jobId, data }) => {
         const socketId = jobIdToSocketIdMap.get(jobId);
         if (socketId) {
             console.log(`[SERVER] Progress for job ${jobId}: ${data.progress}%`); // Comment in production
-            io.to(socketId).emit('video-progress', { res: data.res, progress: data.progress, status: 'processing' });
+            io.to(socketId).emit('video-progress', { ...data });
         }
     });
 
@@ -130,7 +135,7 @@ async function main() {
             });
         }
     });
-    app.post('/job-add', async (req, res) => {
+    app.post('/schedule-job', async (req, res) => {
         const { key, socketId } = req.body;
         if (!key || !socketId) {
             return res.status(400).json({ error: 'key and socketId are required.' });

@@ -11,3 +11,5 @@
 **/coverage
 **/.next
 **/.turbo
+**/downloads
+**/streams
