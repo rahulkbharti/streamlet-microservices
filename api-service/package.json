@@ -5,24 +5,29 @@
   "license": "ISC",
   "author": "",
   "type": "module",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.899.0",
     "@aws-sdk/s3-request-presigner": "^3.899.0",
+    "@prisma/client": "^6.16.3",
     "backblaze-b2": "^1.7.1",
     "bullmq": "^5.59.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "ioredis": "^5.8.0",
+    "mongoose": "^8.19.0",
     "multer": "^2.0.2",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "prisma": {
+    "schema": "src/models/prisma/schema.prisma"
   }
 }

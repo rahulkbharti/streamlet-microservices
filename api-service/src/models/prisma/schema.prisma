@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Users Model
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // --- Relationships ---
+  channel       Channel? // One-to-one with Channel
+  subscriptions Subscription[] @relation("UserSubscriptions") // Many subscriptions made by the user
+}
+
+// 2. Channels Model
+model Channel {
+  id                String   @id @default(uuid())
+  channelName       String
+  description       String?
+  profilePictureUrl String?
+  createdAt         DateTime @default(now())
+
+  // --- Relationships ---
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique // Foreign key, unique enforces one-to-one
+
+  videos      Video[] // One-to-many with Video
+  subscribers Subscription[] @relation("ChannelSubscribers") // Many subscribers to this channel
+}
+
+// 3. Videos Model
+model Video {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  videoUrl     String
+  thumbnailUrl String?
+  uploadStatus String   @default("PROCESSING") // e.g., 'PROCESSING', 'PUBLISHED'
+  visibility   String   @default("PUBLIC") // e.g., 'PUBLIC', 'PRIVATE'
+  createdAt    DateTime @default(now())
+
+  // --- Relationships ---
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channelId String // Foreign key
+}
+
+// 4. Subscriptions Model (Many-to-Many Join Table)
+model Subscription {
+  subscribedAt DateTime @default(now())
+
+  // --- Relationships ---
+  subscriber   User   @relation("UserSubscriptions", fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscriberId String // Foreign key for the user subscribing
+
+  channel   Channel @relation("ChannelSubscribers", fields: [channelId], references: [id], onDelete: Cascade)
+  channelId String // Foreign key for the channel being subscribed to
+
+  @@id([subscriberId, channelId]) // Composite primary key
+}

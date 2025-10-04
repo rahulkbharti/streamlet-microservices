@@ -40,15 +40,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static('public'));
 
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        const ext = file.originalname.split('.').pop();
-        const randomId = randomBytes(8).toString('hex');
-        cb(null, `${randomId}.${ext}`);
-    }
-});
-
 const s3 = new S3Client({
     region: process.env.B2_REGION,
     endpoint: process.env.B2_ENDPOINT,
@@ -57,8 +48,6 @@ const s3 = new S3Client({
         secretAccessKey: process.env.B2_APPLICATION_KEY,
     },
 });
-
-const upload = multer({ storage });
 
 // --- BullMQ & Redis Configuration ---
 // const redisOptions = { host: '127.0.0.1', port: 6379 };
@@ -144,24 +133,6 @@ async function main() {
         console.log(`[SERVER] Added job ${job.id} for socket: ${socketId}`);
         jobIdToSocketIdMap.set(job.id, socketId);
         res.status(200).json({ message: 'Job queued for processing.', jobId: job.id });
-    });
-
-    app.post('/upload', upload.single('video'), async (req, res) => {
-        // Try to get socketId from body or query
-        const socketId = req.body.socketId;
-        const videoFile = req.file;
-        console.log("socketId", socketId, req.body);
-        if (!socketId) {
-            return res.status(400).json({ error: 'socketId missing.' });
-        }
-        console.log("Socket ID:", socketId);
-        console.log("Received file:", videoFile);
-
-        const job = await videoQueue.add('process-video', { videoFile });
-        console.log(`[SERVER] Added job ${job.id} for socket: ${socketId}`);
-        jobIdToSocketIdMap.set(job.id, socketId);
-        res.status(200).json({ message: 'Job queued for processing.', jobId: job.id });
-        // res.status(200).json({ message: 'Job queued for processing.' });
     });
 
     io.on('connection', (socket) => {
