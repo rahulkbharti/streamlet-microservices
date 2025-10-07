@@ -3,7 +3,7 @@ import B2 from "backblaze-b2";
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.development' });
 
-console.log("process.env.B2_KEY_ID", process.env.B2_KEY_ID);
+// console.log("process.env.B2_KEY_ID", process.env.B2_KEY_ID);
 
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,
@@ -16,7 +16,6 @@ const getToken = async (videoId) => {
     if (tokens[videoId]) return tokens[videoId];
     try {
         await b2.authorize(); // 🔑 authorize first
-
         const response = await b2.getDownloadAuthorization({
             bucketId: "8830259d7bf996ff9a9a061b",
             fileNamePrefix: `${videoId}/`,
