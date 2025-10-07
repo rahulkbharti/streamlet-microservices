@@ -4,7 +4,12 @@ import dotenv from "dotenv";
 dotenv.config({ path: '.env.development' });
 import { redisConnection } from "../config/redis.config.js";
 
+<<<<<<< HEAD
 console.log("process.env.B2_KEY_ID", process.env.B2_KEY_ID);
+=======
+// console.log("process.env.B2_KEY_ID", process.env.B2_KEY_ID);
+
+>>>>>>> 7a5264de227d3ad26e9840117ecbbdcf2cd30b3b
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,
     applicationKey: process.env.B2_APPLICATION_KEY

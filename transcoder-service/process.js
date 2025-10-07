@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-// ES Module __dirname/__filename
+// ES_Module __dirname/__filename
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -15,13 +15,12 @@ if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 }
 const SEGMENT_DURATION = 5;
-
 const RESOLUTIONS = [
     // { name: '1080p', width: 1920, height: 1080 },
     // { name: '720p', width: 1280, height: 720 },
     // { name: '480p', width: 854, height: 480 },
     // { name: '360p', width: 640, height: 360 },
-    { name: '240p', width: 426, height: 240 },
+    // { name: '240p', width: 426, height: 240 },
     { name: '144p', width: 256, height: 144 },
 ];
 
@@ -33,7 +32,6 @@ const getVideoMetadata = (sourcePath) =>
             resolve(metadata);
         });
     });
-
 // Generate HLS for one resolution
 const processResolution = (filePath, resolutionPath, resolution, updateFn = () => { }) => {
     return new Promise((resolve, reject) => {
@@ -60,7 +58,6 @@ const processResolution = (filePath, resolutionPath, resolution, updateFn = () =
             .run();
     });
 };
-
 // Create master playlist
 const createMasterM3U8 = (baseOutputPath, resolutions) => {
     const bandwidths = {
@@ -71,7 +68,6 @@ const createMasterM3U8 = (baseOutputPath, resolutions) => {
     ).join('\n');
     fs.writeFileSync(path.join(baseOutputPath, 'master.m3u8'), `#EXTM3U\n${masterM3U8Content}`);
 };
-
 // Generate thumbnail sprite
 const generateThumbnails = (sourcePath, outputDir, duration, segmentDuration) => new Promise((resolve, reject) => {
     const numThumbnails = Math.floor(duration / segmentDuration);
@@ -96,6 +92,40 @@ const generateThumbnails = (sourcePath, outputDir, duration, segmentDuration) =>
         .output(path.join(thumbnailsDir, 'preview%03d.png'))
         .run();
 });
+//  Generate main thumbnail and poster thumbnail for video listing and player poster.
+const generateMainAndPosterThumbnails = async (sourcePath, outputDir, duration) => {
+    const thumbnailsDir = outputDir;
+    if (!fs.existsSync(thumbnailsDir)) {
+        fs.mkdirSync(thumbnailsDir, { recursive: true });
+    }
+
+    // Main thumbnail (first frame)
+    await new Promise((resolve, reject) => {
+        ffmpeg(sourcePath)
+            .screenshots({
+                timestamps: ['0'],
+                filename: 'main.png',
+                folder: thumbnailsDir,
+                size: '320x?'
+            })
+            .on('end', resolve)
+            .on('error', reject);
+    });
+
+    // Poster thumbnail (middle frame)
+    const middleTimestamp = Math.floor(duration / 2);
+    await new Promise((resolve, reject) => {
+        ffmpeg(sourcePath)
+            .screenshots({
+                timestamps: [middleTimestamp],
+                filename: 'poster.png',
+                folder: thumbnailsDir,
+                size: '320x?'
+            })
+            .on('end', resolve)
+            .on('error', reject);
+    });
+};
 
 // Generate VTT file for thumbnails
 const generateVttFile = (outputDir, duration, segmentDuration) => {
@@ -139,6 +169,7 @@ const processVideo = async (sourcePath, updateFn) => {
         createMasterM3U8(outputDirectory, targetResolutions);
 
         await generateThumbnails(sourcePath, outputDirectory, durationInSeconds, SEGMENT_DURATION);
+        await generateMainAndPosterThumbnails(sourcePath, outputDirectory, durationInSeconds);
         generateVttFile(outputDirectory, durationInSeconds, SEGMENT_DURATION);
 
     } catch (error) {
@@ -147,6 +178,7 @@ const processVideo = async (sourcePath, updateFn) => {
 };
 
 export default processVideo;
+
 // // Entry point
 // const main = async () => {
 //     const INPUT_VIDEO_FILENAME = 'input1.mp4';
