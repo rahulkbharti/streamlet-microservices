@@ -1,10 +1,15 @@
 // src/api/routes/video.routes.js
 import { Router } from 'express';
-import { getUploadUrl, scheduleVideoJob } from '../controllers/video.controller.js';
+import { createVideo, deleteVideo, engageVideo, getVideoPublic, getVideosPublic, updateVideo } from '../controllers/video.controller.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.route('/get-upload-url').post(getUploadUrl);
-router.route('/schedule-job').post(scheduleVideoJob);
+router.get("/videos", getVideosPublic);
+router.get("/videos/:videoId", getVideoPublic);
+router.post("/videos", authenticateToken, createVideo);
+router.put("/videos/:videoId", authenticateToken, updateVideo);
+router.delete("/videos/:videoId", authenticateToken, deleteVideo);
 
+router.post("/engag/:videoId", authenticateToken, engageVideo);
 export default router;

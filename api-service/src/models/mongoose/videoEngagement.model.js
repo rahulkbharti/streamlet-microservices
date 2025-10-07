@@ -17,7 +17,7 @@ const videoEngagementSchema = new mongoose.Schema({
     dislikeCount: {
         type: Number,
         default: 0
-    }
+    },
 }, { timestamps: true }); // Adds createdAt and updatedAt
 
 const VideoEngagement = mongoose.model('VideoEngagement', videoEngagementSchema);

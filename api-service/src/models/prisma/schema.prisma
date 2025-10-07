@@ -49,8 +49,7 @@ model Video {
   id           String   @id @default(uuid())
   title        String
   description  String?
-  videoUrl     String
-  thumbnailUrl String?
+  videoId      String   @unique // Unique identifier for the video file
   uploadStatus String   @default("PROCESSING") // e.g., 'PROCESSING', 'PUBLISHED'
   visibility   String   @default("PUBLIC") // e.g., 'PUBLIC', 'PRIVATE'
   createdAt    DateTime @default(now())

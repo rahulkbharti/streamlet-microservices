@@ -17,8 +17,11 @@ const initializeQueueEvents = (io) => {
     queueEvents.on('completed', ({ jobId, returnvalue }) => {
         const socketId = getSocketIdForJob(jobId);
         if (socketId) {
-            console.log(`[QUEUE] Job ${jobId} completed.`);
+            console.log(`[QUEUE] Job ${jobId} completed.`, returnvalue);
             io.to(socketId).emit('video-progress', { progress: 100, status: 'complete', url: returnvalue });
+            const { videoId } = returnvalue;
+            console.log(`[QUEUE] Video available at /watch/${videoId}/master.m3u8`);
+
             removeJobFromSocketMap(jobId);
         }
     });

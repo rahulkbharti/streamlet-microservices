@@ -2,27 +2,25 @@ import express from "express";
 import B2 from "backblaze-b2";
 import dotenv from "dotenv";
 dotenv.config({ path: '.env.development' });
+import { redisConnection } from "../config/redis.config.js";
 
 console.log("process.env.B2_KEY_ID", process.env.B2_KEY_ID);
-
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,
     applicationKey: process.env.B2_APPLICATION_KEY
 });
 
-const tokens = {};
-
 const getToken = async (videoId) => {
-    if (tokens[videoId]) return tokens[videoId];
+    const cachedToken = await redisConnection.get(videoId);
+    if (cachedToken) return cachedToken;
     try {
         await b2.authorize(); // 🔑 authorize first
-
         const response = await b2.getDownloadAuthorization({
             bucketId: "8830259d7bf996ff9a9a061b",
-            fileNamePrefix: `${videoId}/`,
-            validDurationInSeconds: 3600
+            fileNamePrefix: `streams/${videoId}/`,
+            validDurationInSeconds: 3600 // 1 hour
         });
-        tokens[videoId] = response.data.authorizationToken;
+        await redisConnection.set(videoId, response.data.authorizationToken, "EX", 3600); // cache for 3600 seconds
         return response.data.authorizationToken;
     } catch (e) {
         console.error("Error fetching token:", e);
@@ -32,11 +30,25 @@ const getToken = async (videoId) => {
 
 const router = express.Router();
 
+router.get("/:videoId/main.png", async (req, res) => {
+    try {
+        const videoId = req.params.videoId;
+        const token = await getToken(videoId);
+        console.log("Got The Token", token)
+        if (!token) return res.status(500).send("Failed to generate token");
+        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/main.png?Authorization=${token}`;
+        return res.redirect(URL);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Server error");
+    }
+
+})
 // master playlist
 router.get('/:videoId/master.m3u8', async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(`streams/${videoId}`);
+        const token = await getToken(videoId);
         console.log("Got The Token", token)
         if (!token) return res.status(500).send("Failed to generate token");
 
@@ -97,14 +109,11 @@ router.get('/:videoId/:resolution/:segment', async (req, res) => {
         res.status(500).send("Server error");
     }
 });
-
-
-
 // thumbnails vtt
 router.get('/:videoId/thumbnails.vtt', async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(`streams/${videoId}`);
+        const token = await getToken(videoId);
         if (!token) return res.status(500).send("Failed to generate token");
 
         const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/thumbnails.vtt?Authorization=${token}`;
@@ -130,7 +139,6 @@ router.get('/:videoId/thumbnails.vtt', async (req, res) => {
         res.status(500).send("Server error");
     }
 });
-
 // single thumbnail
 router.get('/:videoId/previews/:thumbnail', (req, res) => {
     try {

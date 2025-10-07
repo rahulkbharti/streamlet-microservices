@@ -89,7 +89,7 @@
                 updateProgress(0);
 
                 // 1. Get pre-signed URL from server
-                const response = await fetch('http://localhost:4000/get-upload-url', {
+                const response = await fetch('http://localhost:4000/auth/get-upload-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fileName: file.name })
@@ -169,7 +169,7 @@
         }
 
         const scheduleJob = async (fileName, socketId) => {
-            const responce = await fetch(`http://localhost:4000/schedule-job`, {
+            const responce = await fetch(`http://localhost:4000/auth/schedule-job`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: fileName, socketId })
