@@ -2,7 +2,7 @@ import express from "express";
 import streamRouter from "./routes/stream.routes.js";
 import cors from 'cors';
 
-const PORT = 5000;
+const PORT = process.env.PORT || 4000;
 const app = express();
 
 
