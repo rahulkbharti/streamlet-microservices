@@ -2,6 +2,7 @@
 import { QueueEvents } from 'bullmq';
 import { redisConnection } from '../config/redis.config.js';
 import { getSocketIdForJob, removeJobFromSocketMap } from '../sockets/socket.handler.js';
+import prisma from '../utils/prisma.js';
 
 const initializeQueueEvents = (io) => {
     const queueEvents = new QueueEvents('video-processing', { connection: redisConnection });
@@ -14,14 +15,18 @@ const initializeQueueEvents = (io) => {
         }
     });
 
-    queueEvents.on('completed', ({ jobId, returnvalue }) => {
+    queueEvents.on('completed', async ({ jobId, returnvalue }) => {
         const socketId = getSocketIdForJob(jobId);
         if (socketId) {
             console.log(`[QUEUE] Job ${jobId} completed.`, returnvalue);
             io.to(socketId).emit('video-progress', { progress: 100, status: 'complete', url: returnvalue });
             const { videoId } = returnvalue;
             console.log(`[QUEUE] Video available at /watch/${videoId}/master.m3u8`);
-
+            const result = await prisma.video.update({
+                where: { videoId: videoId },
+                data: { uploadStatus: 'PUBLISHED' }
+            });
+            console.log(`[QUEUE] Database updated for video ${videoId}:`, result);
             removeJobFromSocketMap(jobId);
         }
     });

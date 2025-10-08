@@ -4,203 +4,164 @@ import crypto from "crypto";
 import B2 from "backblaze-b2";
 import dotenv from "dotenv";
 
-dotenv.config({ path: '.env.development' });
-
+dotenv.config({ path: ".env.development" });
 
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,
-    applicationKey: process.env.B2_APPLICATION_KEY
+    applicationKey: process.env.B2_APPLICATION_KEY,
 });
 
-const BUCKET_NAME = "stream-m3u8";
-const STREAMS_DIR = "./streams";
-const B2_BASE_FOLDER = "streams"; // This will create "streams/" folder on Backblaze
+const CONFIG = {
+    BUCKET_NAME: "stream-m3u8",
+    STREAMS_DIR: "./streams",
+    B2_BASE_FOLDER: "streams",
+};
 
-// 🔹 Initialize and get bucket ID
+// 🔹 Authorize and fetch bucket ID
 const getBucketId = async () => {
     await b2.authorize();
-    const { data } = await b2.getBucket({ bucketName: BUCKET_NAME });
+    const { data } = await b2.getBucket({ bucketName: CONFIG.BUCKET_NAME });
     return data.buckets[0].bucketId;
 };
 
 // 🔹 Detect MIME type
 const getMime = (filePath) => {
     const ext = path.extname(filePath).toLowerCase();
-    const mimeTypes = {
-        '.m3u8': 'application/vnd.apple.mpegurl',
-        '.ts': 'video/mp2t',
-        '.vtt': 'text/vtt',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.mp4': 'video/mp4'
+    const mimeMap = {
+        ".m3u8": "application/vnd.apple.mpegurl",
+        ".ts": "video/mp2t",
+        ".vtt": "text/vtt",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".mp4": "video/mp4",
     };
-    return mimeTypes[ext] || 'application/octet-stream';
+    return mimeMap[ext] || "application/octet-stream";
 };
 
-// 🔹 Upload single file with progress
-const uploadFile = async (bucketId, filePath, b2FileName) => {
-    try {
-        const data = fs.readFileSync(filePath);
-        const sha1 = crypto.createHash("sha1").update(data).digest("hex");
-        const fileSize = data.length;
+// 🔹 Upload one file
+const uploadFile = async (bucketId, filePath, destinationPath) => {
+    const data = fs.readFileSync(filePath);
+    const hash = crypto.createHash("sha1").update(data).digest("hex");
+    const fileSize = data.length;
 
-        const { data: uploadData } = await b2.getUploadUrl({ bucketId });
+    const { data: uploadData } = await b2.getUploadUrl({ bucketId });
 
-        console.log(`📤 Uploading: ${b2FileName}`);
-
-        const response = await b2.uploadFile({
-            uploadUrl: uploadData.uploadUrl,
-            uploadAuthToken: uploadData.authorizationToken,
-            fileName: b2FileName,
-            data,
-            hash: sha1,
-            mime: getMime(filePath),
-        });
-
-        console.log(`✅ Uploaded: ${b2FileName} (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
-        return response.data;
-    } catch (error) {
-        console.error(`❌ Failed to upload ${b2FileName}:`, error.message);
-        throw error;
-    }
-};
-
-// 🔹 Get all files recursively from a directory
-const getAllFiles = (dirPath, arrayOfFiles = []) => {
-    const files = fs.readdirSync(dirPath);
-
-    files.forEach(file => {
-        const fullPath = path.join(dirPath, file);
-        if (fs.statSync(fullPath).isDirectory()) {
-            getAllFiles(fullPath, arrayOfFiles);
-        } else {
-            arrayOfFiles.push(fullPath);
-        }
+    console.log(`📤 Uploading: ${destinationPath}`);
+    await b2.uploadFile({
+        uploadUrl: uploadData.uploadUrl,
+        uploadAuthToken: uploadData.authorizationToken,
+        fileName: destinationPath,
+        data,
+        hash,
+        mime: getMime(filePath),
     });
 
-    return arrayOfFiles;
+    console.log(`✅ Uploaded: ${destinationPath} (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
 };
 
-// 🔹 Upload specific video folder by ID
-const uploadVideoFolder = async (videoId, bucketId, onProgress) => {
-    const videoFolderPath = path.join(STREAMS_DIR, videoId);
+// ✅ Fixed version — recursive file walker without duplicates
+const getAllFiles = (dirPath) => {
+    const result = [];
 
-    if (!fs.existsSync(videoFolderPath)) {
-        throw new Error(`Video folder not found: ${videoFolderPath}`);
-    }
+    const walk = (dir) => {
+        const files = fs.readdirSync(dir, { withFileTypes: true });
+        for (const file of files) {
+            const fullPath = path.join(dir, file.name);
+            if (file.isDirectory()) walk(fullPath);
+            else result.push(fullPath);
+        }
+    };
+
+    walk(dirPath);
+    // remove duplicates just in case
+    return [...new Set(result)];
+};
+
+// 🔹 Upload all files for a video folder
+const uploadVideoFolder = async (videoId, bucketId, onProgress) => {
+    const folderPath = path.join(CONFIG.STREAMS_DIR, videoId);
+    if (!fs.existsSync(folderPath)) throw new Error(`Video folder not found: ${folderPath}`);
 
     console.log(`📁 Uploading video: ${videoId}`);
-    console.log(`📁 Target folder on Backblaze: ${B2_BASE_FOLDER}/${videoId}/`);
+    console.log(`📁 Target folder on Backblaze: ${CONFIG.B2_BASE_FOLDER}/${videoId}/`);
 
-    const files = getAllFiles(videoFolderPath);
+    const files = getAllFiles(folderPath);
+    console.log(`📦 Found ${files.length} files to upload.`);
+
+    const totalSize = files.reduce((acc, f) => acc + fs.statSync(f).size, 0);
     let uploadedCount = 0;
-    let totalSize = 0;
+    let uploadedSize = 0;
 
     for (const file of files) {
-        const relativeToVideoFolder = path.relative(videoFolderPath, file);
-        const b2FilePath = path.join(B2_BASE_FOLDER, videoId, relativeToVideoFolder).replace(/\\/g, '/');
+        const relativePath = path.relative(folderPath, file);
+        const destinationPath = path
+            .join(CONFIG.B2_BASE_FOLDER, videoId, relativePath)
+            .replace(/\\/g, "/");
 
-        await uploadFile(bucketId, file, b2FilePath);
+        await uploadFile(bucketId, file, destinationPath);
+
         uploadedCount++;
-        totalSize += fs.statSync(file).size;
-        const videoFolderSize = files.reduce((acc, file) => acc + fs.statSync(file).size, 0);
-        if (onProgress) {
-            onProgress({
-                videoId,
-                uploadedCount,
-                totalCount: files.length,
-                uploadedSize: totalSize,
-                totalSize: videoFolderSize
-            });
-        }
-    }
+        uploadedSize += fs.statSync(file).size;
 
-
-    for (const file of files) {
-        const relativeToVideoFolder = path.relative(videoFolderPath, file);
-        const b2FilePath = path.join(B2_BASE_FOLDER, videoId, relativeToVideoFolder).replace(/\\/g, '/');
-
-        await uploadFile(bucketId, file, b2FilePath);
-        uploadedCount++;
-        totalSize += fs.statSync(file).size;
+        onProgress?.({
+            videoId,
+            uploadedCount,
+            totalCount: files.length,
+            uploadedSize,
+            totalSize,
+        });
     }
 
     console.log(`🎉 Upload complete for ${videoId}`);
     console.log(`📊 Files uploaded: ${uploadedCount}`);
-    console.log(`💾 Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
-
-    return { uploadedCount, totalSize };
+    console.log(`💾 Total size: ${(uploadedSize / 1024 / 1024).toFixed(2)} MB`);
+    return { uploadedCount, totalSize: uploadedSize };
 };
 
-// 🔹 List all available video IDs
-const listVideoIds = () => {
-    if (!fs.existsSync(STREAMS_DIR)) {
-        console.log("❌ Streams directory not found");
-        return [];
-    }
-
-    const items = fs.readdirSync(STREAMS_DIR);
-    const videoIds = items.filter(item => {
-        const fullPath = path.join(STREAMS_DIR, item);
-        return fs.statSync(fullPath).isDirectory();
-    });
-
-    console.log("📁 Available video IDs:");
-    videoIds.forEach(id => console.log(`  - ${id}`));
-
-    return videoIds;
-};
-
-// 🔹 Delete video folder after upload
-const deleteVideoFolder = (videoId) => {
-    const videoFolderPath = path.join(STREAMS_DIR, videoId);
-    if (fs.existsSync(videoFolderPath)) {
-        fs.rmSync(videoFolderPath, { recursive: true, force: true });
-        console.log(`🗑️ Deleted local folder: ${videoId}`);
-    }
-};
-
-// 🔹 Check if file exists on Backblaze
-const checkFileOnBackblaze = async (fileName) => {
-    try {
-        await b2.authorize();
-        const response = await b2.getFileInfoByName({
-            bucketName: BUCKET_NAME,
-            fileName: fileName
-        });
-        return { exists: true, info: response.data };
-    } catch (error) {
-        return { exists: false };
-    }
-};
-
-// 🔹 Main function to upload specific video
+// 🔹 Main upload handler
 const UploadOnB2 = async (videoId, deleteAfterUpload = false, onProgress) => {
     try {
         console.log(`🚀 Starting upload for video: ${videoId}`);
-
         const bucketId = await getBucketId();
+
+        // prevent accidental double execution
+        if (global.__isUploadingB2) {
+            console.log("⚠️ Upload already in progress. Skipping duplicate call.");
+            return;
+        }
+        global.__isUploadingB2 = true;
+
         const result = await uploadVideoFolder(videoId, bucketId, onProgress);
 
-        const checkFile = await checkFileOnBackblaze(`streams/${videoId}/master.m3u8`);
-        if (checkFile.exists) {
-            console.log(`✅ Verified: streams/${videoId}/master.m3u8 exists on Backblaze`);
+        const masterPath = `${CONFIG.B2_BASE_FOLDER}/streams${videoId}/master.m3u8`;
+        try {
+            await b2.authorize();
+            await b2.getFileInfoByName({
+                bucketName: CONFIG.BUCKET_NAME,
+                fileName: masterPath,
+            });
+            console.log(`✅ Verified: ${masterPath} exists on Backblaze`);
+        } catch {
+            console.warn(`⚠️ Could not verify master.m3u8 existence on Backblaze`);
         }
 
         if (deleteAfterUpload) {
-            deleteVideoFolder(videoId);
+            const folderPath = path.join(CONFIG.STREAMS_DIR, videoId);
+            fs.rmSync(folderPath, { recursive: true, force: true });
+            console.log(`🗑️ Deleted local folder: ${videoId}`);
         }
 
         console.log(`✅ Successfully uploaded ${videoId} to Backblaze B2`);
-        console.log(`📁 Backblaze Path: ${B2_BASE_FOLDER}/${videoId}/`);
-        return result;
+        console.log(`📁 Backblaze Path: ${CONFIG.B2_BASE_FOLDER}/${videoId}/`);
 
-    } catch (error) {
-        console.error(`❌ Failed to upload ${videoId}:`, error.message);
-        throw error;
+        global.__isUploadingB2 = false;
+        return result;
+    } catch (err) {
+        global.__isUploadingB2 = false;
+        console.error(`❌ Failed to upload ${videoId}: ${err.message}`);
+        throw err;
     }
 };
 
 export default UploadOnB2;
-

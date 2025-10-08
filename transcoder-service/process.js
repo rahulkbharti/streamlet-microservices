@@ -20,7 +20,7 @@ const RESOLUTIONS = [
     // { name: '720p', width: 1280, height: 720 },
     // { name: '480p', width: 854, height: 480 },
     // { name: '360p', width: 640, height: 360 },
-    // { name: '240p', width: 426, height: 240 },
+    { name: '240p', width: 426, height: 240 },
     { name: '144p', width: 256, height: 144 },
 ];
 

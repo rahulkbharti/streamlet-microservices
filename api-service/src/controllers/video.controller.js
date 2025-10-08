@@ -9,15 +9,16 @@ import VideoEngagement from '../models/mongoose/videoEngagement.model.js';
 import UserInteraction from '../models/mongoose/userInteraction.model.js';
 // Make sure to import the Comment model if it's in a separate file
 import Comment from '../models/mongoose/comment.model.js';
+import { generateVideoId } from '../utils/generateVideoId.js';
 
 const getUploadUrl = async (req, res) => {
     try {
-        const { fileName } = req.body;
-        if (!fileName) {
-            return res.status(400).json({ error: 'FileName is required' });
+        const { title, description } = req.body;
+        if (!title) {
+            return res.status(400).json({ error: 'title is required' });
         }
-
-        const uniqueName = `uploads/${Date.now()}_${fileName.replace(/ /g, '_')}`;
+        const videoId = generateVideoId();
+        const uniqueName = `uploads/${Date.now()}_${title.replace(/ /g, '_')}`;
         const command = new PutObjectCommand({
             Bucket: "stream-m3u8",
             Key: uniqueName,
@@ -26,10 +27,22 @@ const getUploadUrl = async (req, res) => {
 
         const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
         console.log('✅ Pre-signed URL generated');
-
+        const response = await prisma.video.create({
+            data: {
+                title: uniqueName.split("/")[1],
+                description: description,
+                videoId: videoId.split('.')[0],
+                channel: { connect: { id: "39c59045-c6d2-4623-a81b-98d2dd34613a" } }
+            }
+        })
+        if (!response) {
+            return res.status(500).json({ error: 'Failed to create video record' });
+        }
         res.status(200).json({
             uploadUrl: presignedUrl,
-            fileName: uniqueName,
+            key: uniqueName,
+            ...response
+
         });
     } catch (error) {
         console.error('💥 Error:', error);
@@ -38,12 +51,11 @@ const getUploadUrl = async (req, res) => {
 };
 
 const scheduleVideoJob = async (req, res) => {
-    const { key, socketId } = req.body;
+    const { key, videoId, socketId } = req.body;
     if (!key || !socketId) {
         return res.status(400).json({ error: 'key and socketId are required.' });
     }
-
-    const job = await videoQueue.add('process-video', { key });
+    const job = await videoQueue.add('process-video', { key, videoId });
     console.log(`[SERVER] Added job ${job.id} for socket: ${socketId}`);
     addJobToSocketMap(job.id, socketId);
     res.status(200).json({ message: 'Job queued for processing.', jobId: job.id });

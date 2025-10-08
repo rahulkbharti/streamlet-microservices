@@ -11,14 +11,13 @@ const b2 = new B2({
     applicationKey: process.env.B2_APPLICATION_KEY
 });
 
-const DownloadFromB2 = async ({ key, onProgress }) => {
+const DownloadFromB2 = async ({ key, videoId, onProgress }) => {
     if (!key) throw new Error('Key is required for download.');
     try {
         await b2.authorize();
 
         const fileName = key; // Keep 'uploads/filename.mp4'
-        const outputFileName = generateVideoId();
-        const outputPath = path.join(process.cwd(), 'downloads', outputFileName);
+        const outputPath = path.join(process.cwd(), 'downloads', videoId + ".mp4");
 
         // Ensure downloads directory exists
         const downloadsDir = path.dirname(outputPath);
@@ -62,7 +61,7 @@ const DownloadFromB2 = async ({ key, onProgress }) => {
         const stats = fs.statSync(outputPath);
         console.log(`📁 Saved file size: ${stats.size} bytes`);
 
-        return outputFileName;
+        return videoId;
 
     } catch (error) {
         console.error('❌ Download failed:', error);
