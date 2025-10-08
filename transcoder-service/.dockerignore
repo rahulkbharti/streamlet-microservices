@@ -1,0 +1,18 @@
+# .dockerignore
+
+# Environment variables
+.env*
+
+# Node modules - these will be installed inside the container
+node_modules
+
+# Git folder
+.git
+.gitignore
+
+# Docker files
+Dockerfile
+docker-compose.yml
+
+# Logs and debug files
+npm-debug.log

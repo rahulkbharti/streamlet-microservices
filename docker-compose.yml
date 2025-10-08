@@ -1,0 +1,60 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  # The main API gateway that handles user requests
+  api-service:
+    build: ./api-service
+    container_name: api-service
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./api-service/.env
+      - ./api-service/.env.development
+    environment:
+      - REDIS_URL=redis://redis:6379  
+    networks:
+      - microservice-net
+    depends_on:
+      - redis
+
+  # Service responsible for delivering video content/segments
+  content-service:
+    build: ./content-service
+    container_name: content-service
+    ports:
+      - "4001:4001"
+    env_file:
+      - ./content-service/.env.development
+    environment:
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - microservice-net
+    depends_on:
+      - redis
+
+  # The background worker for video transcoding
+  transcode-service:
+    build: ./transcoder-service
+    container_name: transcoder-service
+    ports:
+      - "4002:4002"
+    env_file:
+      - ./transcoder-service/.env.development
+    environment:
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - microservice-net
+    depends_on:
+      - redis
+
+  # A Redis instance for message queuing between services
+  redis:
+    image: "redis:alpine"
+    container_name: redis
+    networks:
+      - microservice-net
+
+networks:
+  microservice-net:
+    driver: bridge
