@@ -16,7 +16,7 @@ const getToken = async (videoId) => {
     try {
         await b2.authorize(); // 🔑 authorize first
         const response = await b2.getDownloadAuthorization({
-            bucketId: "8830259d7bf996ff9a9a061b",
+            bucketId: process.env.B2_BUCKET_ID,
             fileNamePrefix: `streams/${videoId}/`,
             validDurationInSeconds: 3600 // 1 hour
         });

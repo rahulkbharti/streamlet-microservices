@@ -87,11 +87,11 @@ const getVideosPublic = async (req, res) => {
 };
 
 const getVideoPublic = async (req, res) => {
+    console.log(req.user)
     const { videoId } = req.params;
     if (!videoId) {
         return res.status(400).json({ message: "Video ID is required" });
     }
-
     try {
         // 1. Get the specific video from PostgreSQL
         const video = await prisma.video.findFirst({
@@ -122,14 +122,43 @@ const getVideoPublic = async (req, res) => {
             // UserInteraction.find({ videoId: video.id })
         ]);
 
-        // 3. Combine all data into a single response object
+        // 3. Check if the current user has liked, disliked, or subscribed
+        let userStatus = {
+            liked: false,
+            disliked: false,
+            subscribed: false
+        };
+
+        if (req.user) {
+            // Check like/dislike status
+            const userInteraction = await UserInteraction.findOne({
+                videoId: video.id,
+                userId: req.user.id
+            });
+            if (userInteraction) {
+                console.log(userInteraction)
+                userStatus.liked = userInteraction.interactionType === "LIKE";
+                userStatus.disliked = userInteraction.interactionType === "DISLIKE";
+            }
+            // Check subscription status
+            const subscription = await prisma.subscription.findUnique({
+                where: {
+                    subscriberId_channelId: {
+                        subscriberId: req.user.id,
+                        channelId: video.channelId
+                    }
+                }
+            });
+            userStatus.subscribed = !!subscription;
+            console.log(subscription)
+        }
+        // 4. Combine all data into a single response object
         const combinedResponse = {
             ...video,
             engagements: engagements || null,
             comments: comments || [],
-            // userInteractions: userInteractions || []
+            userStatus
         };
-
         res.status(200).json(combinedResponse);
     } catch (e) {
         console.error(e);
