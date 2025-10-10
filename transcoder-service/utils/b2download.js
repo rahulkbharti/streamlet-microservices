@@ -2,7 +2,7 @@ import B2 from "backblaze-b2";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-import { generateVideoId } from "./nameGenerator.js";
+// import { generateVideoId } from "./nameGenerator.js";
 
 dotenv.config({ path: '.env.development' });
 const BUCKET_NAME = 'stream-m3u8';
