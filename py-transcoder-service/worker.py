@@ -34,23 +34,23 @@ async def processor(job, token):
         download_path.parent.mkdir(parents=True, exist_ok=True)
 
         # --- Step 1: Download the video file from Backblaze ---
-        # print(f"[WORKER] Downloading file from B2: {key}")
+        print(f"[WORKER] Downloading file from B2: {key}")
         
-        # progress_data = {
-        #     "type": "downloading", 
-        #     "videoId": video_id, 
-        #     "fileName": key, 
-        #     "percent": 0,
-        #     "status": "Downloading from B2"
-        # }
-        # print(f"[PROGRESS] {progress_data}")
+        progress_data = {
+            "type": "downloading", 
+            "videoId": video_id, 
+            "fileName": key, 
+            "percent": 0,
+            "status": "Downloading from B2"
+        }
+        print(f"[PROGRESS] {progress_data}")
 
-        # # Download file
-        # download_result = download_from_b2(
-        #     key=key, 
-        #     video_id=video_id.split('.')[0]
-        # )
-        # print(f"[WORKER] File downloaded to: {download_path}")
+        # Download file
+        download_result = download_from_b2(
+            key=key, 
+            video_id=video_id.split('.')[0]
+        )
+        print(f"[WORKER] File downloaded to: {download_path}")
 
         # --- Step 2: Process the video file on the server ---
         progress_data = {
@@ -68,7 +68,7 @@ async def processor(job, token):
         # Create an 'uploads' directory if it doesn't exist
         UPLOAD_DIR = CURRENT_DIR / "downloads"
         UPLOAD_DIR.mkdir(exist_ok=True)
-        input_video_filename = 'TEST1.mp4'
+        input_video_filename = video_id + ".mp4"
         video_path = UPLOAD_DIR / input_video_filename
         if not video_path.is_file():
             print(f"Input video not found at '{video_path}'", file=sys.stderr)
