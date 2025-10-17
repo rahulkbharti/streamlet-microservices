@@ -12,7 +12,11 @@ import Comment from '../models/mongoose/comment.model.js';
 import { generateVideoId } from '../utils/generateVideoId.js';
 
 const getUploadUrl = async (req, res) => {
+    if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
     try {
+        console.log('📥 Generating upload URL with request body:', req.body);
         const { title, description } = req.body;
         if (!title) {
             return res.status(400).json({ error: 'title is required' });
@@ -24,7 +28,13 @@ const getUploadUrl = async (req, res) => {
             Key: uniqueName,
             ContentType: 'video/mp4',
         });
-
+        const user = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            include: { channel: true }
+        });
+        if (!user || !user.channel) {
+            return res.status(400).json({ error: 'User does not have a channel' });
+        }
         const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
         console.log('✅ Pre-signed URL generated');
         const response = await prisma.video.create({
@@ -32,9 +42,9 @@ const getUploadUrl = async (req, res) => {
                 title: uniqueName.split("/")[1],
                 description: description,
                 videoId: videoId.split('.')[0],
-                channel: { connect: { id: "39c59045-c6d2-4623-a81b-98d2dd34613a" } }
+                channel: { connect: { id: user.channel.id } }
             }
-        })
+        });
         if (!response) {
             return res.status(500).json({ error: 'Failed to create video record' });
         }
@@ -99,7 +109,6 @@ const getVideosPublic = async (req, res) => {
 };
 
 const getVideoPublic = async (req, res) => {
-    console.log(req.user)
     const { videoId } = req.params;
     if (!videoId) {
         return res.status(400).json({ message: "Video ID is required" });
@@ -148,7 +157,7 @@ const getVideoPublic = async (req, res) => {
                 userId: req.user.id
             });
             if (userInteraction) {
-                console.log(userInteraction)
+                // console.log(userInteraction)
                 userStatus.liked = userInteraction.interactionType === "LIKE";
                 userStatus.disliked = userInteraction.interactionType === "DISLIKE";
             }
@@ -162,7 +171,7 @@ const getVideoPublic = async (req, res) => {
                 }
             });
             userStatus.subscribed = !!subscription;
-            console.log(subscription)
+            // console.log(subscription)
         }
         // 4. Combine all data into a single response object
         const combinedResponse = {
@@ -253,8 +262,9 @@ const engageVideo = async (req, res) => {
             case "comment": {
                 if (!commentText)
                     return res.status(400).json({ message: "commentText is required" });
-
-                const newComment = new Comment({ videoId, userId, commentText });
+                const user = await prisma.user.findUnique({ where: { id: userId } });
+                // console.log("user", user);
+                const newComment = new Comment({ videoId, userId: user.username || "Anonymous User", commentText });
                 await newComment.save();
 
                 responseMessage = "Comment added";
@@ -272,7 +282,7 @@ const engageVideo = async (req, res) => {
                     },
                 });
 
-                console.log("existingSub", existingSub);
+                // console.log("existingSub", existingSub);
 
                 if (existingSub) {
                     await prisma.subscription.delete({ where: { subscriberId_channelId: { subscriberId: userId, channelId } } });

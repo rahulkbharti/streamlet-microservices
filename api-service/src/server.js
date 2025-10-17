@@ -1,5 +1,5 @@
 // server.js
-import 'dotenv/config';
+
 import { createServer } from 'http';
 import { app } from './app.js';
 import { initializeSocketIO } from './sockets/socket.handler.js';

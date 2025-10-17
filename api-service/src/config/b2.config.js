@@ -1,7 +1,8 @@
 // src/config/b2.config.js
 import { S3Client } from '@aws-sdk/client-s3';
 import dotenv from "dotenv";
-dotenv.config({ path: `.env.${process.env.NODE_ENV || "development"}` });
+dotenv.config({ path: `./${process.env.ENV_FILE}` });
+console.log("B2 Configuration:", process.env.B2_REGION, process.env.B2_ENDPOINT);
 
 const s3Client = new S3Client({
     region: process.env.B2_REGION,

@@ -1,10 +1,14 @@
 import express from "express";
 import B2 from "backblaze-b2";
-import dotenv from "dotenv";
-dotenv.config({ path: '.env.development' });
 import { redisConnection } from "../config/redis.config.js";
+import dotenv from "dotenv";
 
-console.log("process.env.B2_KEY_ID", process.env.B2_KEY_ID);
+dotenv.config({ path: `./${process.env.ENV_FILE}` });
+
+if (!process.env.B2_KEY_ID || !process.env.B2_APPLICATION_KEY) {
+    console.warn("Missing B2 environment variables. Check your .env or process environment.");
+}
+
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,
     applicationKey: process.env.B2_APPLICATION_KEY
@@ -34,7 +38,6 @@ router.get("/:videoId/main.png", async (req, res) => {
     try {
         const videoId = req.params.videoId;
         const token = await getToken(videoId);
-        console.log("Got The Token", token)
         if (!token) return res.status(500).send("Failed to generate token");
         const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/main.png?Authorization=${token}`;
         return res.redirect(URL);
@@ -49,7 +52,6 @@ router.get('/:videoId/master.m3u8', async (req, res) => {
     try {
         const videoId = req.params.videoId;
         const token = await getToken(videoId);
-        console.log("Got The Token", token)
         if (!token) return res.status(500).send("Failed to generate token");
 
         const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/master.m3u8?Authorization=${token}`;
@@ -64,7 +66,7 @@ router.get('/:videoId/master.m3u8', async (req, res) => {
         // rewrite sub-playlists with token
         m3u8Text = m3u8Text.replace(/(\d+p\/playlist\.m3u8)/g, `$1?Authorization=${token}`);
         // console.log(m3u8Text)
-        console.log("re-written master.m3u8")
+        console.log(`[${videoId}] : Generated Signed master.m3u8`);
         res.set("Content-Type", "application/vnd.apple.mpegurl");
         res.send(m3u8Text);
     } catch (err) {
@@ -87,9 +89,9 @@ router.get('/:videoId/:resolution/playlist.m3u8', async (req, res) => {
         let m3u8Text = await response.text();
 
         // rewrite sub-playlists with token
-        m3u8Text = m3u8Text.replace(/(segment\d+\.ts)/g, `$1?Authorization=${Authorization}`);
+        m3u8Text = m3u8Text.replace(/(segment\d+\.ts)/g, `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${resolution}/$1?Authorization=${Authorization}`);
         // console.log(m3u8Text)
-        console.log("re-written playlist.m3u8")
+        console.log(`[${videoId}] : Generated Signed playlist-${resolution}.m3u8`);
         res.set("Content-Type", "application/vnd.apple.mpegurl");
         res.send(m3u8Text);
     } catch (err) {
@@ -128,10 +130,10 @@ router.get('/:videoId/thumbnails.vtt', async (req, res) => {
         // rewrite sub-playlists with token
         vttText = vttText.replace(
             /(previews\/[^\s]+\.png)/g,
-            (match) => `${match}?Authorization=${token}`
+            (match) => `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${match}?Authorization=${token}`
         );
         // console.log(vttText)
-        console.log("re-written master.vtt")
+        console.log(`[${videoId}] : Generated Signed master.vtt`)
         res.set("Content-Type", "text/vtt");
         res.send(vttText);
     } catch (err) {

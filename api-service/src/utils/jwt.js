@@ -1,13 +1,11 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config({ path: '.env.development' });
 
 // Generate Access Token (short lifespan)
 const generateAccessToken = (user) => {
     return jwt.sign(
-        { id: user.id, email: user.email },  // payload
-        process.env.ACCESS_TOKEN_SECRET,     // secret
-        { expiresIn: '1d' }                 // token lifespan
+        { id: user.id, email: user.email },                   // payload
+        process.env.ACCESS_TOKEN_SECRET,                     // secret
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRATION }    // token lifespan
     );
 };
 
@@ -16,7 +14,7 @@ const generateRefreshToken = (user) => {
     return jwt.sign(
         { id: user.id, email: user.email },
         process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRATION }
     );
 };
 
