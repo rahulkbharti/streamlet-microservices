@@ -2,9 +2,11 @@ import B2 from "backblaze-b2";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
-// import { generateVideoId } from "./nameGenerator.js";
+dotenv.config({ path: `./${process.env.ENV_FILE}` });
 
-dotenv.config({ path: '.env.development' });
+console.log('B2 Key ID:', process.env.B2_KEY_ID ? 'Loaded' : 'Missing');
+console.log('B2 Application Key:', process.env.B2_APPLICATION_KEY ? 'Loaded' : 'Missing');
+
 const BUCKET_NAME = 'stream-m3u8';
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,

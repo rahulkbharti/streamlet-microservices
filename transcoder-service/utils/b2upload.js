@@ -3,8 +3,7 @@ import path from "path";
 import crypto from "crypto";
 import B2 from "backblaze-b2";
 import dotenv from "dotenv";
-
-dotenv.config({ path: ".env.development" });
+dotenv.config({ path: `./${process.env.ENV_FILE}` });
 
 const b2 = new B2({
     applicationKeyId: process.env.B2_KEY_ID,

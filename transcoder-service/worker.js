@@ -11,7 +11,7 @@ import Redis from 'ioredis';
 const connection = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null
 });
-
+console.log('[WORKER] Connected to Redis.: ', process.env.REDIS_URL);
 // --- The Processor Function ---
 // This async function is where each job is processed.
 // The `job` object contains the data and methods to update progress.
