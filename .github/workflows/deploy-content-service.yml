@@ -1,4 +1,4 @@
-name: Build and Deploy API Service
+name: Build and Deploy Content Service
 
 on:
   push:
@@ -14,6 +14,7 @@ jobs:
   build-content:
     name: Build Content Service
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -43,6 +44,7 @@ jobs:
     name: Deploy Content Service
     runs-on: ubuntu-latest
     needs: build-content
+    environment: production
     steps:
       - name: Trigger Render Deployment
         run: |
