@@ -4,7 +4,9 @@ import Redis from 'ioredis';
 import { downloadVideo } from './utils/azureDownload.js';
 import { UploadStream } from './utils/azureUpload.js';
 import { cleanupResources } from './utils/cleanupResources.js';
+import dotenv from 'dotenv';
 
+dotenv.config({ path: `./${process.env.ENV_FILE}` });
 const connection = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null
 });

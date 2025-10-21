@@ -29,7 +29,7 @@ const getUploadUrl = async (req, res) => {
         }
 
         const videoId = generateVideoId();
-        const uniqueFileName = `${Date.now()}-${title.replace(/ /g, '_')}`;
+        const uniqueFileName = `${Date.now()}-${title.replace(/ /g, '_')}.mp4`;
         const presignedUrl = await generateUploadSasUrl(uniqueFileName);
 
         // Create video record in the database
