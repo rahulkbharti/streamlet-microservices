@@ -5,7 +5,7 @@ function generateVideoId(length = 11) {
     for (let i = 0; i < length; i++) {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
-    return result + ".mp4";
+    return result;
 }
 
 export { generateVideoId };

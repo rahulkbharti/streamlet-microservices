@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@azure/storage-blob": "^12.29.1",
     "axios": "^1.12.2",
     "backblaze-b2": "^1.7.1",
     "bullmq": "^5.59.0",

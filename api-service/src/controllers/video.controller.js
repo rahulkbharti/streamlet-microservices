@@ -1,7 +1,3 @@
-// src/api/controllers/video.controller.js
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { s3Client } from "../config/b2.config.js";
 import { videoQueue } from '../queues/video.queue.js';
 import { addJobToSocketMap } from '../sockets/socket.handler.js';
 import prisma from "../utils/prisma.js";
@@ -10,6 +6,7 @@ import UserInteraction from '../models/mongoose/userInteraction.model.js';
 // Make sure to import the Comment model if it's in a separate file
 import Comment from '../models/mongoose/comment.model.js';
 import { generateVideoId } from '../utils/generateVideoId.js';
+import { generateUploadSasUrl } from "../utils/generateUploadSAS.js"
 
 const getUploadUrl = async (req, res) => {
     if (!req.user) {
@@ -21,13 +18,8 @@ const getUploadUrl = async (req, res) => {
         if (!title) {
             return res.status(400).json({ error: 'title is required' });
         }
-        const videoId = generateVideoId();
-        const uniqueName = `uploads/${Date.now()}_${title.replace(/ /g, '_')}`;
-        const command = new PutObjectCommand({
-            Bucket: "stream-m3u8",
-            Key: uniqueName,
-            ContentType: 'video/mp4',
-        });
+
+        // Searching For Athentic user
         const user = await prisma.user.findUnique({
             where: { id: req.user.id },
             include: { channel: true }
@@ -35,13 +27,17 @@ const getUploadUrl = async (req, res) => {
         if (!user || !user.channel) {
             return res.status(400).json({ error: 'User does not have a channel' });
         }
-        const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-        console.log('✅ Pre-signed URL generated');
+
+        const videoId = generateVideoId();
+        const uniqueFileName = `${Date.now()}-${title.replace(/ /g, '_')}`;
+        const presignedUrl = await generateUploadSasUrl(uniqueFileName);
+
+        // Create video record in the database
         const response = await prisma.video.create({
             data: {
-                title: uniqueName.split("/")[1],
+                title: title,
                 description: description,
-                videoId: videoId.split('.')[0],
+                videoId: videoId,
                 channel: { connect: { id: user.channel.id } }
             }
         });
@@ -50,7 +46,7 @@ const getUploadUrl = async (req, res) => {
         }
         res.status(200).json({
             uploadUrl: presignedUrl,
-            key: uniqueName,
+            key: uniqueFileName,
             ...response
 
         });

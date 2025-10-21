@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Blob Uploader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .progress-bar-fill {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-2xl bg-white rounded-lg shadow-lg p-8 space-y-6">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Azure File Uploader</h1>
+            <p class="text-gray-500 mt-2">Upload a file directly to Azure Blob Storage using a SAS URL.</p>
+        </div>
+
+        <!-- Step 1: SAS URL Input -->
+        <div>
+            <label for="sasUrl" class="block text-sm font-medium text-gray-700">1. Paste SAS URL</label>
+            <div class="mt-1">
+                <input type="text" id="sasUrl" name="sasUrl"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="Paste the temporary upload URL here...">
+            </div>
+        </div>
+
+        <!-- Step 2: File Input -->
+        <div>
+            <label for="fileInput" class="block text-sm font-medium text-gray-700">2. Choose a File to Upload</label>
+            <div class="mt-1">
+                <input type="file" id="fileInput" name="fileInput"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+        </div>
+
+        <!-- Step 3: Upload Button -->
+        <div>
+            <button id="uploadButton"
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400">
+                Upload File
+            </button>
+        </div>
+
+        <!-- Progress Bar and Status -->
+        <div class="space-y-3 pt-4">
+            <div id="progress-container" class="w-full bg-gray-200 rounded-full h-2.5 hidden">
+                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full progress-bar-fill" style="width: 0%"></div>
+            </div>
+            <div id="status" class="text-center text-sm text-gray-600"></div>
+        </div>
+    </div>
+
+    <script>
+        const sasUrlInput = document.getElementById('sasUrl');
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+        const statusDiv = document.getElementById('status');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+
+        // UI Helper Functions
+        const updateProgress = (percent) => {
+            progressBar.style.width = `${percent}%`;
+        };
+
+        const showStatus = (message, type) => {
+            statusDiv.textContent = message;
+            statusDiv.className = 'text-center text-sm '; // Reset classes
+            switch (type) {
+                case 'uploading':
+                    statusDiv.classList.add('text-blue-600');
+                    break;
+                case 'success':
+                    statusDiv.classList.add('text-green-600', 'font-semibold');
+                    break;
+                case 'error':
+                    statusDiv.classList.add('text-red-600', 'font-semibold');
+                    break;
+                default:
+                    statusDiv.classList.add('text-gray-600');
+            }
+        };
+
+        /**
+         * Uploads a file to Azure Blob Storage using a SAS URL.
+         * @param {string} sasUrl The full SAS URL for the upload.
+         * @param {File} file The file to upload.
+         * @returns {Promise<{success: boolean, status: number, message: string}>} A promise that resolves on success or rejects on failure.
+         */
+        function uploadFileToAzure(sasUrl, file) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+
+                // 1. Progress Event Listener
+                xhr.upload.addEventListener('progress', (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        updateProgress(percentComplete);
+
+                        const loadedMB = (event.loaded / (1024 * 1024)).toFixed(2);
+                        const totalMB = (event.total / (1024 * 1024)).toFixed(2);
+                        showStatus(`Uploading: ${loadedMB}MB / ${totalMB}MB (${Math.round(percentComplete)}%)`, 'uploading');
+                    }
+                });
+
+                // 2. Load Event Listener (fires when request is complete)
+                xhr.addEventListener('load', () => {
+                    // A successful PUT request to Azure Blob Storage returns status 201 (Created).
+                    if (xhr.status === 201) {
+                        updateProgress(100);
+                        showStatus('✅ Upload completed successfully!', 'success');
+                        console.log('✅ File uploaded to Azure Blob Storage.');
+                        resolve({
+                            success: true,
+                            status: xhr.status,
+                            message: 'File uploaded successfully'
+                        });
+                    } else {
+                        console.error('Upload failed with status:', xhr.status, xhr.responseText);
+                        showStatus(`❌ Upload failed. Status: ${xhr.status}. Message: ${xhr.responseText}`, 'error');
+                        reject(new Error(`Upload failed: ${xhr.status} - ${xhr.responseText}`));
+                    }
+                });
+
+                // 3. Error and Abort Event Listeners
+                xhr.addEventListener('error', () => {
+                    showStatus('❌ Upload failed due to a network error.', 'error');
+                    reject(new Error('Upload failed due to network error'));
+                });
+
+                xhr.addEventListener('abort', () => {
+                    showStatus('Upload was cancelled.', 'default');
+                    reject(new Error('Upload was cancelled'));
+                });
+
+                // 4. Configure and Send the Request
+                xhr.open('PUT', sasUrl);
+
+                // --- Set Azure-specific headers ---
+                // This header is required to tell Azure what kind of blob to create.
+                xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+                // The Content-Type header should match the file type.
+                xhr.setRequestHeader('Content-Type', file.type);
+                // ------------------------------------
+
+                xhr.send(file);
+            });
+        }
+
+        // --- Main Upload Logic ---
+        uploadButton.addEventListener('click', async () => {
+            const sasUrl = sasUrlInput.value;
+            const file = fileInput.files[0];
+
+            // Validation
+            if (!sasUrl) {
+                showStatus('Please paste a SAS URL first.', 'error');
+                return;
+            }
+            if (!file) {
+                showStatus('Please choose a file to upload.', 'error');
+                return;
+            }
+
+            // Reset UI and disable button
+            uploadButton.disabled = true;
+            uploadButton.textContent = 'Uploading...';
+            progressContainer.classList.remove('hidden');
+            updateProgress(0);
+            showStatus('Preparing upload...', 'default');
+
+            try {
+                await uploadFileToAzure(sasUrl, file);
+            } catch (error) {
+                console.error(error);
+                // Status is already set by the promise rejection
+            } finally {
+                // Re-enable button
+                uploadButton.disabled = false;
+                uploadButton.textContent = 'Upload File';
+            }
+        });
+    </script>
+</body>
+
+</html>

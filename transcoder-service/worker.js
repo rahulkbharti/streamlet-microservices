@@ -1,52 +1,51 @@
-// worker.js
 import { Worker } from 'bullmq';
-// import { setTimeout } from 'timers/promises';
 import processVideo from './process.js';
-import DownloadFromB2 from './utils/b2download.js';
-import UploadOnB2 from './utils/b2upload.js';
-import fs from 'fs/promises';
 import Redis from 'ioredis';
-// --- BullMQ & Redis Configuration ---
-// const redisOptions = { host: '127.0.0.1', port: 6379 };
+import { downloadVideo } from './utils/azureDownload.js';
+import { UploadStream } from './utils/azureUpload.js';
+import { cleanupResources } from './utils/cleanupResources.js';
+
 const connection = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null
 });
 console.log('[WORKER] Connected to Redis.: ', process.env.REDIS_URL);
-// --- The Processor Function ---
-// This async function is where each job is processed.
+
+
 // The `job` object contains the data and methods to update progress.
 const processor = async (job) => {
     console.log(`[WORKER] Starting job ${job.id}. Data:`, job.data);
-    // Step 1 : Download The video file (.mp4) from blackblaze
-    console.log(`[WORKER] Downloading file from B2: ${job.data.key}`);
     const videoId = job.data.videoId;
-    await DownloadFromB2({
-        key: job.data.key, videoId, onProgress: async (percent, loaded, total) => {
-            await job.updateProgress({ type: "downloading", videoId, fileName: job.data.key, percent, loaded, total });
-        }
-    });
-    console.log(`[WORKER] File downloaded to: ${videoId}`);
-    // Step 2 : Process the video File on server (worker)
-    await processVideo(`./downloads/${videoId}.mp4`, async ({ res, progress }) => {
-        await job.updateProgress({ type: "processing", videoId, res, progress });
-    });
-    // Optionally delete the local file after processing
-    try {
-        await fs.unlink(`./downloads/${videoId}.mp4`);
-        console.log(`[WORKER] Deleted file: ./downloads/${videoId}.mp4`);
-    } catch (err) {
-        console.warn(`[WORKER] Could not delete file ./downloads/${videoId}.mp4: ${err.message}`);
-    }
-    // Step 3 : Upload the chunks files on blackblaze.
-    console.log(`[WORKER] Uploading processed files to B2...`);
-    const uploadResult = await UploadOnB2(videoId.split('.')[0], true, async (info) => {
-        await job.updateProgress({ type: "uploading", videoId, ...info });
-    });
-    console.log(`[WORKER] Upload completed. Result:`, uploadResult);
-    // Cleanup local files if needed
-    console.log(`[WORKER] Job ${job.id} complete. Processed video ID: ${videoId}`);
+    const key = job.data.key;
 
-    return { videoId, uploadResult };
+    const downloadUpdate = async ({ loadedBytes, totalBytes, percent }) => {
+        // console.log(`[WORKER] Download progress: ${progress}%`);
+        await job.updateProgress({ type: "downloading", videoId, fileName: key, percent, loadedBytes, totalBytes })
+    }
+    const processUpdate = async ({ res, progress }) => {
+        await job.updateProgress({ type: "processing", videoId, res, progress });
+    }
+    const uploadUpdate = async (update) => {
+        await job.updateProgress({ type: "uploading", videoId, ...update });
+    }
+
+
+    console.log(`videoId is ${videoId} , key is ${key}`);
+    // Step 1 : Download The video file (.mp4) from azure
+    console.log(`Downloading file from Azure: ${key}`);
+    await downloadVideo(key, `${videoId}.mp4`, downloadUpdate);
+    console.log(`File downloaded to: ./downloads/${videoId}.mp4`);
+    // Step 2 : Process the video
+    await processVideo(`./downloads/${videoId}.mp4`, processUpdate);
+    console.log("video is process")
+    // Step 3 : Upload back to Azure
+    console.log(`Uploading video streams to Azure: ${videoId}`);
+    await UploadStream(videoId, uploadUpdate);
+    console.log("video streams is uploaded to azure")
+
+    //Cleaning Up process
+    await cleanupResources(key, `${videoId}.mp4`, videoId);
+
+    return { videoId }
 };
 
 // --- Worker Initialization ---

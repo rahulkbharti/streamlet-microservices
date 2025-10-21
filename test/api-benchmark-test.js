@@ -1,59 +1,11 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Trend } from "k6/metrics";
-
 const USERS = 100;
-const users_credentials = [
-    {
-        "email": "streamlet0@gmail.com",
-        "password": "123456"
-    },
-    {
-        "email": "streamlet1@gmail.com",
-        "password": "123456"
-    },
-    {
-        "email": "streamlet2@gmail.com",
-        "password": "123456"
-    },
-    {
-        "email": "streamlet3@gmail.com",
-        "password": "123456"
-    },
-    {
-        "email": "streamlet4@gmail.com",
-        "password": "123456"
-    },
-    {
-        "email": "streamlet5@gmail.com",
-        "password": "123456"
-    },
-]
-
-const BASE_URL = 'http://10.226.160.206:4000'; // Replace with your API base URL
+const BASE_URL = 'https://streamlet-api-service.whiteforest-cc5f4251.centralindia.azurecontainerapps.io/api/v1'; // Replace with your API base URL
 
 // 🧩 Your API list
 const apis = [
-    // AUTH APIs
-    // {
-    //     name: "signup",
-    //     method: "POST",
-    //     endpoint: `${BASE_URL}/auth/signup`,
-    //     body: {
-    //         "email": "streamlet@gmail.com",
-    //         "password": "123456"
-    //     },
-    // },
-    {
-        name: "login",
-        method: "POST",
-        endpoint: `${BASE_URL}/auth/login`,
-        body: {
-            "email": "streamlet@gmail.com",
-            "password": "123456"
-        },
-    },
-    // VIDEO APIs
     {
         name: "getVideos",
         method: "GET",
@@ -64,27 +16,6 @@ const apis = [
         method: "GET",
         endpoint: `${BASE_URL}/videos/Ufo7Wl3uq6P`,
     },
-    // {
-    //     name: "likeVideo",
-    //     method: "POST",
-    //     endpoint: `${BASE_URL}/engag/7813443d-7cc0-4218-a8a7-464033e00c0f`,
-    //     body: { action: "like" },
-    // },
-    // {
-    //     name: "dislikeVideo",
-    //     method: "POST",
-    //     endpoint: `${BASE_URL}/engag/7813443d-7cc0-4218-a8a7-464033e00c0f`,
-    //     body: { action: "dislike" },
-    // },
-    // {
-    //     name: "createComment",
-    //     method: "POST",
-    //     endpoint: `${BASE_URL}/engag/7813443d-7cc0-4218-a8a7-464033e00c0f`,
-    //     body: {
-    //         action: "comment",
-    //         commentText: "This Comment is Added BY API",
-    //     },
-    // },
     {
         name: "channels",
         method: "GET",

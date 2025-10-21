@@ -89,9 +89,9 @@
                 updateProgress(0);
 
                 // 1. Get pre-signed URL from server
-                const response = await fetch('http://localhost:4000/auth/get-upload-url', {
+                const response = await fetch('http://localhost:4000/api/v1/auth/get-upload-url', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${localStorage.getItem('token')}` },
                     body: JSON.stringify({ title: file.name, description: "sds" })
                 });
 
@@ -127,7 +127,7 @@
                     });
 
                     xhr.addEventListener('load', () => {
-                        if (xhr.status === 200) {
+                        if (xhr.status === 201) {
                             updateProgress(100);
                             showStatus('✅ Upload completed successfully! File immediately visible!', 'success');
 
@@ -141,6 +141,7 @@
                                 message: 'File uploaded successfully'
                             });
                         } else {
+                            console.log('Upload failed:', xhr.status);
                             reject(new Error(`Upload failed: ${xhr.status} - ${xhr.responseText}`));
                         }
                     });
@@ -154,6 +155,9 @@
                     });
                     // Start the upload with PUT method
                     xhr.open('PUT', data.uploadUrl);
+
+                    // Set headers for Azure Blob Storage SAS URL   
+                    xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
 
                     // Set headers for AWS SDK pre-signed URL
                     xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
@@ -170,9 +174,9 @@
         }
 
         const scheduleJob = async (key, socketId, videoId) => {
-            const responce = await fetch(`http://localhost:4000/auth/schedule-job`, {
+            const responce = await fetch(`http://localhost:4000/api/v1/auth/schedule-job`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', "Authorization": `Bearer ${localStorage.getItem('token')}` },
                 body: JSON.stringify({ key, socketId, videoId })
             });
             const responceData = await responce.json();

@@ -1,96 +1,81 @@
 import express from "express";
-import B2 from "backblaze-b2";
-import { redisConnection } from "../config/redis.config.js";
-import dotenv from "dotenv";
-
-dotenv.config({ path: `./${process.env.ENV_FILE}` });
-
-if (!process.env.B2_KEY_ID || !process.env.B2_APPLICATION_KEY) {
-    console.warn("Missing B2 environment variables. Check your .env or process environment.");
-}
-
-const b2 = new B2({
-    applicationKeyId: process.env.B2_KEY_ID,
-    applicationKey: process.env.B2_APPLICATION_KEY
-});
-
-const getToken = async (videoId) => {
-    const cachedToken = await redisConnection.get(videoId);
-    if (cachedToken) return cachedToken;
-    try {
-        await b2.authorize(); // 🔑 authorize first
-        const response = await b2.getDownloadAuthorization({
-            bucketId: process.env.B2_BUCKET_ID,
-            fileNamePrefix: `streams/${videoId}/`,
-            validDurationInSeconds: 3600 // 1 hour
-        });
-        await redisConnection.set(videoId, response.data.authorizationToken, "EX", 3600); // cache for 3600 seconds
-        return response.data.authorizationToken;
-    } catch (e) {
-        console.error("Error fetching token:", e);
-        return null;
-    }
-};
-
+import { getBlobUrl, getContainerSASToken } from "../utils/getSASTokens";
 const router = express.Router();
 
 router.get("/:videoId/main.png", async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(videoId);
-        if (!token) return res.status(500).send("Failed to generate token");
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/main.png?Authorization=${token}`;
+        const token = await getContainerSASToken();
+        if (!token) return res.status(500).json({ message: "Failed to generate token" });
+
+        const blobPath = `${videoId}/main.png`;
+        const URL = `${getBlobUrl(blobPath)}?${token}`;
         return res.redirect(URL);
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server error");
+        res.status(500).json({ message: "Server error" });
     }
+});
 
-})
 // master playlist
 router.get('/:videoId/master.m3u8', async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(videoId);
-        if (!token) return res.status(500).send("Failed to generate token");
+        const token = await getContainerSASToken();
+        if (!token) return res.status(500).json({ message: "Failed to generate token" });
 
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/master.m3u8?Authorization=${token}`;
+        const blobPath = `${videoId}/master.m3u8`;
+        const URL = `${getBlobUrl(blobPath)}?${token}`;
         const response = await fetch(URL);
 
         if (!response.ok) {
-            return res.status(response.status).send("Failed to fetch master");
+            return res.status(response.status).json({ message: `Failed to fetch master playlist. Status: ${response.status}` });
         }
-
         let m3u8Text = await response.text();
+        // Rewrite sub-playlists with token
+        m3u8Text = m3u8Text.replace(
+            /(\d+p\/playlist\.m3u8)/g,
+            `$1?${token}`
+        );
 
-        // rewrite sub-playlists with token
-        m3u8Text = m3u8Text.replace(/(\d+p\/playlist\.m3u8)/g, `$1?Authorization=${token}`);
-        // console.log(m3u8Text)
         console.log(`[${videoId}] : Generated Signed master.m3u8`);
         res.set("Content-Type", "application/vnd.apple.mpegurl");
         res.send(m3u8Text);
     } catch (err) {
         console.error(err);
-        res.status(500).send("Server error");
+        res.status(500).json({ message: "Server error" });
     }
 });
+
 // resolution playlist
 router.get('/:videoId/:resolution/playlist.m3u8', async (req, res) => {
     try {
+        console.warn(`[${req.params.videoId}] : WARNING - Deprecated playlist route was hit.`);
+
         const { videoId, resolution } = req.params;
-        const { Authorization } = req.query;
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${resolution}/playlist.m3u8?Authorization=${Authorization}`;
+        const token = req.url.split('?')[1];
+
+        if (!token) {
+            return res.status(401).json({ message: "Missing authorization token" });
+        }
+
+        const blobPath = `${videoId}/${resolution}/playlist.m3u8`;
+        const URL = `${getBlobUrl(blobPath)}?${token}`;
         const response = await fetch(URL);
 
         if (!response.ok) {
-            return res.status(response.status).send("Failed to fetch master");
+            return res.status(response.status).send(`Failed to fetch playlist. Status: ${response.status}`);
         }
 
         let m3u8Text = await response.text();
+        const segmentBaseUrl = getBlobUrl(`${videoId}/${resolution}`);
 
-        // rewrite sub-playlists with token
-        m3u8Text = m3u8Text.replace(/(segment\d+\.ts)/g, `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${resolution}/$1?Authorization=${Authorization}`);
-        // console.log(m3u8Text)
+        // Rewrite segments with an ABSOLUTE URL to the Azure blob
+        m3u8Text = m3u8Text.replace(
+            /(segment\d+\.ts)/g,
+            `${segmentBaseUrl}/$1?${token}`
+        );
+
         console.log(`[${videoId}] : Generated Signed playlist-${resolution}.m3u8`);
         res.set("Content-Type", "application/vnd.apple.mpegurl");
         res.send(m3u8Text);
@@ -99,40 +84,31 @@ router.get('/:videoId/:resolution/playlist.m3u8', async (req, res) => {
         res.status(500).send("Server error");
     }
 });
-// segment
-router.get('/:videoId/:resolution/:segment', async (req, res) => {
-    try {
-        const { videoId, resolution, segment } = req.params;
-        const { Authorization } = req.query;
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${resolution}/${segment}?Authorization=${Authorization}`;
-        return res.redirect(URL);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Server error");
-    }
-});
+
 // thumbnails vtt
 router.get('/:videoId/thumbnails.vtt', async (req, res) => {
     try {
         const videoId = req.params.videoId;
-        const token = await getToken(videoId);
+        const token = await getContainerSASToken();
         if (!token) return res.status(500).send("Failed to generate token");
 
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/thumbnails.vtt?Authorization=${token}`;
+        const blobPath = `${videoId}/thumbnails.vtt`;
+        const URL = `${getBlobUrl(blobPath)}?${token}`;
         const response = await fetch(URL);
 
         if (!response.ok) {
-            return res.status(response.status).send("Failed to fetch vtt");
+            return res.status(response.status).send(`Failed to fetch vtt. Status: ${response.status}`);
         }
 
         let vttText = await response.text();
+        const previewBaseUrl = getBlobUrl(videoId);
 
-        // rewrite sub-playlists with token
+        // rewrite preview URLs with ABSOLUTE paths
         vttText = vttText.replace(
             /(previews\/[^\s]+\.png)/g,
-            (match) => `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/${match}?Authorization=${token}`
+            (match) => `${previewBaseUrl}/${match}?${token}`
         );
-        // console.log(vttText)
+
         console.log(`[${videoId}] : Generated Signed master.vtt`)
         res.set("Content-Type", "text/vtt");
         res.send(vttText);
@@ -141,20 +117,7 @@ router.get('/:videoId/thumbnails.vtt', async (req, res) => {
         res.status(500).send("Server error");
     }
 });
-// single thumbnail
-router.get('/:videoId/previews/:thumbnail', (req, res) => {
-    try {
-        const { videoId, thumbnail } = req.params;
-        const { Authorization } = req.query;
-        const URL = `https://f005.backblazeb2.com/file/stream-m3u8/streams/${videoId}/previews/${thumbnail}?Authorization=${Authorization}`;
-        return res.redirect(URL);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Server error");
-    }
-});
 
-
-
+// Export the router for use in your main server file
 export default router;
 
