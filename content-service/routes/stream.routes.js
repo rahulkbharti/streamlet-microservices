@@ -50,15 +50,12 @@ router.get('/:videoId/master.m3u8', async (req, res) => {
 // resolution playlist
 router.get('/:videoId/:resolution/playlist.m3u8', async (req, res) => {
     try {
-        console.warn(`[${req.params.videoId}] : WARNING - Deprecated playlist route was hit.`);
-
         const { videoId, resolution } = req.params;
         const token = req.url.split('?')[1];
 
         if (!token) {
             return res.status(401).json({ message: "Missing authorization token" });
         }
-
         const blobPath = `${videoId}/${resolution}/playlist.m3u8`;
         const URL = `${getBlobUrl(blobPath)}?${token}`;
         const response = await fetch(URL);

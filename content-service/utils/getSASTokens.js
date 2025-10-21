@@ -20,6 +20,11 @@ const AZURE_CONTAINER_NAME = process.env.AZURE_CONTAINER_NAME;
 const SAS_CACHE_KEY = process.env.SAS_CACHE_KEY;
 const SAS_EXPIRY_SECONDS = process.env.SAS_EXPIRY_SECONDS;
 
+
+console.log("Azure Container Name:", AZURE_CONTAINER_NAME);
+console.log("SAS Cache Key:", SAS_CACHE_KEY);
+console.log("SAS Expiry Seconds:", SAS_EXPIRY_SECONDS);
+
 let blobServiceClient;
 let containerClient;
 let sharedKeyCredential;
@@ -63,7 +68,7 @@ try {
 export const getContainerSASToken = async () => {
     const cachedToken = await redisConnection.get(SAS_CACHE_KEY);
     if (cachedToken) return cachedToken;
-
+    console.log("Generating new Azure SAS token...");
     try {
         const expiryDate = new Date();
         expiryDate.setSeconds(expiryDate.getSeconds() + SAS_EXPIRY_SECONDS);
