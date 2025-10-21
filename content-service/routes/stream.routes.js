@@ -1,5 +1,5 @@
 import express from "express";
-import { getBlobUrl, getContainerSASToken } from "../utils/getSASTokens";
+import { getBlobUrl, getContainerSASToken } from "../utils/getSASTokens.js";
 const router = express.Router();
 
 router.get("/:videoId/main.png", async (req, res) => {
