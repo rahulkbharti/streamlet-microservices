@@ -6,11 +6,6 @@ on:
     paths:
       - "api-service/**"
 
-  pull_request:
-    branches: [main]
-    # paths:
-    #   - "api-service/**"
-
   workflow_dispatch:
 
 # Permissions required for OIDC login
