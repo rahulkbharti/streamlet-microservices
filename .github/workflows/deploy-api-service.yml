@@ -8,8 +8,8 @@ on:
 
   pull_request:
     branches: [main]
-    paths:
-      - "api-service/**"
+    # paths:
+    #   - "api-service/**"
 
   workflow_dispatch:
 
