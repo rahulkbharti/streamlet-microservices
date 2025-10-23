@@ -1,0 +1,103 @@
+├── .gitattributes
+├── .github
+    └── workflows
+    │   ├── deploy-api-service.yml
+    │   ├── deploy-content-service.yml
+    │   └── deploy-transcoder-service.yml
+├── .gitignore
+├── LICENSE
+├── README.md
+├── Streamlet.jpg
+├── api-service
+    ├── .dockerignore
+    ├── Dockerfile
+    ├── package-lock.json
+    ├── package.json
+    ├── public
+    │   ├── auth.html
+    │   ├── azure.html
+    │   ├── index.html
+    │   ├── pl.html
+    │   ├── player.html
+    │   ├── tube.html
+    │   └── upload.html
+    └── src
+    │   ├── app.js
+    │   ├── config
+    │       ├── b2.config.js
+    │       ├── index.config.js
+    │       └── redis.config.js
+    │   ├── controllers
+    │       ├── channel.controller.js
+    │       ├── comment.controller.js
+    │       └── video.controller.js
+    │   ├── middlewares
+    │       ├── auth.middleware.js
+    │       ├── logger.middleware.js
+    │       └── publicAuth.middleware.js
+    │   ├── models
+    │       ├── .gitignore
+    │       ├── mongoose
+    │       │   ├── comment.model.js
+    │       │   ├── userInteraction.model.js
+    │       │   └── videoEngagement.model.js
+    │       └── prisma
+    │       │   ├── migrations
+    │       │       ├── 20251006072403_init
+    │       │       │   └── migration.sql
+    │       │       ├── 20251007033127_changed_video_table
+    │       │       │   └── migration.sql
+    │       │       ├── 20251008152342_h
+    │       │       │   └── migration.sql
+    │       │       └── migration_lock.toml
+    │       │   └── schema.prisma
+    │   ├── queues
+    │       ├── queue.events.js
+    │       └── video.queue.js
+    │   ├── routes
+    │       ├── auth.routes.js
+    │       ├── channel.routes.js
+    │       ├── main.routes.js
+    │       └── video.routes.js
+    │   ├── server.js
+    │   ├── sockets
+    │       └── socket.handler.js
+    │   └── utils
+    │       ├── generateUploadSAS.js
+    │       ├── generateVideoId.js
+    │       ├── jwt.js
+    │       ├── mongodb.js
+    │       ├── prisma.js
+    │       └── username.js
+├── b2.md
+├── content-service
+    ├── .dockerignore
+    ├── Dockerfile
+    ├── config
+    │   └── redis.config.js
+    ├── package-lock.json
+    ├── package.json
+    ├── routes
+    │   └── stream.routes.js
+    ├── server.js
+    └── utils
+    │   └── getSASTokens.js
+├── docker-compose.yml
+├── test
+    └── api-benchmark-test.js
+└── transcoder-service
+    ├── .dockerignore
+    ├── Dockerfile
+    ├── package-lock.json
+    ├── package.json
+    ├── process.js
+    ├── test.js
+    ├── utils
+        ├── azureDownload.js
+        ├── azureUpload.js
+        ├── b2download.js
+        ├── b2upload.js
+        ├── cleanupResources.js
+        └── nameGenerator.js
+    ├── workFlow.js
+    └── worker.js
