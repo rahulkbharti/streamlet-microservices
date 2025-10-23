@@ -73,6 +73,47 @@ Streamlet consists of three core, decoupled microservices that communicate via a
 
 ---
 
+## Test Scenarios & Analysis
+
+Two separate tests were run to determine both the stable performance and the absolute limit of the infrastructure.
+
+### Test 1: Baseline Load (150 Max VUs)
+
+This test simulated a heavy load of 150 concurrent users.
+
+- **Result:** `✓ COMPLETE SUCCESS`
+- **Analysis:** The application passed all thresholds with excellent performance. P95 latency for both endpoints was `~1 second`, well below the 2-second goal. Reliability was 100%.
+
+| Metric (150 VUs) | `getVideo` p(95) | `getVideos` p(95) | `http_req_failed` |
+| :--------------- | :--------------- | :---------------- | :---------------- |
+| **Result**       | `1.03s`          | `1.00s`           | `0.00%`           |
+| **Threshold**    | `✓ PASSED`       | `✓ PASSED`        | `✓ PASSED`        |
+
+### Test 2: Stress Test (200 Max VUs)
+
+After the success of the 150 VU test, the load was increased to 200 VUs to find the system's bottleneck.
+
+- **Result:** `✓ BOTTLENECK IDENTIFIED`
+- **Analysis:** The system remained 100% reliable (`0.00%` errors), but performance degraded. Latency doubled, and the `getVideo` endpoint failed its 2-second P95 goal.
+
+| Metric (200 VUs) | `getVideo` p(95) | `getVideos` p(95) | `http_req_failed` |
+| :--------------- | :--------------- | :---------------- | :---------------- |
+| **Result**       | `2.06s`          | `1.99s`           | `0.00%`           |
+| **Threshold**    | `✗ FAILED`       | `✓ PASSED`        | `✓ PASSED`        |
+
+---
+
+## 3. Conclusion
+
+- **Sweet Spot:** The application runs perfectly at 150 concurrent users with 1-second response times.
+- **Bottleneck:** The performance limit for the 0.25 vCPU containers is between 150-200 users. At this load, CPU saturation causes latency to double.
+- **Databases:** In both tests, Neon Postgres and MongoDB were stable and not the bottleneck.
+- **Actionable Insight:** The system is 100% stable. To serve over 150 users at peak performance, the container's vCPU (compute) resources should be vertically scaled.
+
+## 4. Full k6 Output
+
+For detailed test results and logs, refer to the `test` folders within each service directory.
+
 ## Getting Started
 
 Follow these steps to set up the project locally:

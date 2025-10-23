@@ -1,0 +1,65 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+     execution: local
+        script: videos-test.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 200 max VUs, 2m0s max duration (incl. graceful stop):
+              * default: Up to 200 looping VUs for 1m30s over 3 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+
+
+  █ THRESHOLDS 
+
+    http_req_duration{name:getVideo}
+    ✗ 'p(95)<2000' p(95)=2.06s
+
+    http_req_duration{name:getVideos}
+    ✓ 'p(95)<2000' p(95)=1.99s
+
+    http_req_failed
+    ✓ 'rate<0.05' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 5578    59.288252/s
+    checks_succeeded...: 100.00% 5578 out of 5578
+    checks_failed......: 0.00%   0 out of 5578
+
+    ✓ getVideos status is 2xx
+    ✓ getVideo status is 2xx
+
+    CUSTOM
+    getVideo_duration..............: avg=1390.143765 min=466.203302 med=1043.014721 max=4940.293437 p(90)=2023.695969 p(95)=2063.22633 
+    getVideos_duration.............: avg=1155.223918 min=450.774151 med=994.937592  max=3990.620575 p(90)=1974.688585 p(95)=1997.594369
+
+    HTTP
+    http_req_duration..............: avg=1.27s       min=450.77ms   med=1.01s       max=4.94s       p(90)=2.01s       p(95)=2.03s      
+      { expected_response:true }...: avg=1.27s       min=450.77ms   med=1.01s       max=4.94s       p(90)=2.01s       p(95)=2.03s      
+      { name:getVideo }............: avg=1.39s       min=466.2ms    med=1.04s       max=4.94s       p(90)=2.02s       p(95)=2.06s      
+      { name:getVideos }...........: avg=1.15s       min=450.77ms   med=994.93ms    max=3.99s       p(90)=1.97s       p(95)=1.99s      
+    http_req_failed................: 0.00%  0 out of 5578
+    http_reqs......................: 5578   59.288252/s
+
+    EXECUTION
+    iteration_duration.............: avg=5.55s       min=3.98s      med=5.08s       max=9.12s       p(90)=6.94s       p(95)=6.99s      
+    iterations.....................: 2789   29.644126/s
+    vus............................: 1      min=1         max=200
+    vus_max........................: 200    min=200       max=200
+
+    NETWORK
+    data_received..................: 19 MB  201 kB/s
+    data_sent......................: 486 kB 5.2 kB/s
+
+
+
+
+running (1m34.1s), 000/200 VUs, 2789 complete and 0 interrupted iterations
+default ✓ [======================================] 000/200 VUs  1m30s
+ERRO[0094] thresholds on metrics 'http_req_duration{name:getVideo}' have been crossed 
